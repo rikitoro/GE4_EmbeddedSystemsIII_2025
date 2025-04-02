@@ -8,7 +8,10 @@ title = "組込みシステムIII"
 # codeblock にファイル名を表示 see https://crates.io/crates/mdbook-codename
 [preprocessor.codename] 
 
+
+
 [output.html]
 mathjax-support = true
 # 日本語検索 see https://blog.bridgey.dev/2023/06/14/search-japanese-on-mdbook/
 additional-js = ["assets/fzf.umd.js", "assets/elasticlunr.js"]
+

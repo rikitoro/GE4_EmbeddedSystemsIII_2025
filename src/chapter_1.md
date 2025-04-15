@@ -194,12 +194,13 @@ Error (10161): Verilog HDL error at simple_io.sv(8): ...
 
 pin planner の Location の欄に Node Name に対応する PIN 番号を設定してください。
 (なお、Locationの欄に AA2 と入力すると PIN_AA2 と補完されます)
+設定を終えたら、pin planner を閉じてください。
 
 ![PinPlanner](./assets/QP_PinPlanner.png)
 
-実習ボードDE0-CVにおいて、
-各ピンがどのI/Oデバイスに接続されているかは
-ユーザーマニュアルを確認してください。
+なお、実習ボードDE0-CVにおいて、
+PFAGの各ピンがそれぞれどのI/Oデバイスに接続されているかは
+DE0-CV ユーザーマニュアルを確認してください。
 
 #### プロジェクトのコンパイル
 
@@ -221,27 +222,31 @@ SW10 は RUN に設定しておいてください。
 
 Quartus Prime で、[Tools] > [Programmer] を選択し Programmer を起動します。
 
+![Programmer](./assets/QP_Programmer.png)
+
+ウィンドウ上部では次を設定してください。
 - [Hardware Setup]でUSB-Blaster[USB-0]を選択
 - ModeはJTAGを選択
 
-Fileが空欄の場合は[Add File]より output_files/ 下にあるsofファイルを選び追加してください。
+中央のペインでは、プロジェクトをビルドして作成された回路情報のsofファイル(.sof)を選択します。
+空欄の場合は [Add File] より output_files/ 下にあるsofファイルを選び追加してください。
+選択した sofファイルの Program/Configure にチェックを入れてください。
 
-sofファイルのProgram/Configureにチェックを入れてください。
-
-この状態で[Start]をクリックすると、書き込みが開始されます。
+この状態で [Start] をクリックすると、書き込みが開始されます。
 Progressが100%になると書き込み完了です。
 
 ### 1.3.5 動作確認
 
-実習ボードDE0-CVのスライドスイッチSW7-0をいろいろと切り替えて、
-LEDR7-0がどの様に点灯するかを確認しましょう。
+実習ボードのスライドスイッチ SW7-SW0 をそれぞれオン・オフすると、
+対応する LEDR7-LED0 が点灯したり消灯したりするはずです。
+動作を確認しましょう。
 
 ### 1.3.6  プロジェクトの保存
 
-[File]>[Save Project]より、プロジェクトの保存ができます。
+[File] > [Save Project] より、プロジェクトの保存ができます。
 
 次回以降、保存したプロジェクトを利用したいときは
-[File]>[Open Project]からプロジェクト名の付いたqpfファイルを選択します
+[File] > [Open Project] からプロジェクト名の付いたqpfファイルを選択します。
 
 
 ## A. 演習課題
@@ -254,7 +259,7 @@ LEDR7-0がどの様に点灯するかを確認しましょう。
 
 [リスト1.2 : bitwise_and.sv]
 
-```systemverilog
+```sv : bitwise_and.sv
 module bitwise_and(
   input   logic [3:0] sw_high,
   input   logic [3:0] sw_low,
@@ -268,17 +273,18 @@ endmodule
 
 [表1.2 : bitwise_and のピンの割り当て]
 
-|Node Name|Location|
-|:---|:---|
-|led[0]|PIN_AA2|
-|led[1]|PIN_AA1|
-|led[2]|PIN_W2|
-|led[3]|PIN_Y3|
-|sw_low[0]|PIN_U13|
-|sw_low[1]|PIN_V13|
-|sw_low[2]|PIN_T13|
-|sw_low[3]|PIN_T12|
-|sw_high[0]|PIN_AA15|
-|sw_high[1]|PIN_AB15|
-|sw_high[2]|PIN_AA14|
-|sw_high[3]|PIN_AA13|
+|Node Name|Location|割り当てデバイス|入出力|
+|:---|:---|---|---|
+|led[0]|PIN_AA2| LEDR0 | output |
+|led[1]|PIN_AA1| LEDR1 | output |
+|led[2]|PIN_W2| LEDR2 | output |
+|led[3]|PIN_Y3| LEDR3 | output |
+|sw_low[0]|PIN_U13| SW0 | input |
+|sw_low[1]|PIN_V13| SW1 | input |
+|sw_low[2]|PIN_T13| SW2 | input |
+|sw_low[3]|PIN_T12| SW3 | input |
+|sw_high[0]|PIN_AA15| SW4 | input |
+|sw_high[1]|PIN_AB15| SW5 | input |
+|sw_high[2]|PIN_AA14| SW6 | input |
+|sw_high[3]|PIN_AA13| SW7 | input |
+

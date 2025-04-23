@@ -228,3 +228,29 @@ mux4 モジュールの入出力信号は表3.3aのように DE0-CV の入出力
 |d2[1:0] | SW3-SW2      | input |
 |d3[1:0] | SW1-SW0      | input |
 |y[1:0]| LEDR1-LEDR0    | output |
+
+## 3.4 プライオリティエンコーダ
+
+図3.4に示すような 4 入力のプライオリティエンコーダを設計することを考えます。
+表3.4にこの 4 入力のプライオリティエンコーダ priority_encoder の機能表を示します。
+
+```sv : priority_encoder.sv
+module priority_encoder(
+  input   logic [3:0] d,  // 入力信号
+  output  logic [1:0] y,  // 出力信号
+  output  logic       en  // 有効信号
+);
+
+  assign en = |d; // d[3] | d[2] | d[1] | d[0] と同じ
+  
+  always_comb begin
+    casez (d)
+      4'b1??? : y = 2'b11;
+      4'b01?? : y = 2'b10;
+      4'b001? : y = 2'b01;
+      4'b0001 : y = 2'b00;
+      default : y = 2'b00;
+     endcase
+  end
+  
+endmodule

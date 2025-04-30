@@ -198,7 +198,7 @@ mask_C3 モジュールの入出力信号は表 2.3a のように DE0-CV の入�
 
 <リスト2.7 mux モジュール>
 
-```systemverilog : mux.sv
+```sv : mux.sv
 module mux(
   input   logic       sel,
   input   logic [3:0] d0,
@@ -247,7 +247,7 @@ mux モジュールの入出力信号は表2.4のように DE0-CV の入出力�
 
 <リスト2.5 bitmix モジュール>
 
-```systemverilog : bitmix.sv
+```sv : bitmix.sv
 module bitmix(
   input   logic [3:0] a,
   input   logic [3:0] b,

@@ -12,7 +12,6 @@ LED(LEDR9-0)、7セグメントLED(HEX5-0)、GPIOなど多くのI/Oを
 ![DE0-CV](./assets/DE0_CV_simple_io.png)
 
 
-
 [http://cd-de0-cv.terasic.com](http://cd-de0-cv.terasic.com)
 より、ユーザーマニュアルをダウンロードしておいてください。
 

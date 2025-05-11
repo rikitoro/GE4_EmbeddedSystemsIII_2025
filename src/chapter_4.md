@@ -3,14 +3,70 @@
 System Verilog ではモジュールを組み合わせ、より大規模な回路モジュールを構築することができます。
 本章では、これまでに設計した様々な回路モジュールを組み合わせて新しい回路を設計する方法を学びます。
 
-## 7 セグメント表示付きプライオリティエンコーダ
+## 4.1 7 セグメント表示付きプライオリティエンコーダ
 
 3 章ではプライオリティエンコーダ (priori_encoder) や 7 セグメントデコーダ (sseg_decoder) を作成しました。
 ここでは、プライオリティエンコーダの出力結果をさらに 7 セグメントデコーダを用いて変換し 7 セグメント LED 上で結果を表示する回路を設計します。
 
 ![7セグメント表示付きプライオリティエンコーダ](./assets/chap04_penc_hex.svg)
 
-<図5.1 7セグメント表示機能付き加算器>
+<図4.1 7セグメント表示付きプライオリティエンコーダ>
+
+```sv : shell.sv
+module shell(
+  input   logic [3:0] SW,
+  output  logic [6:0] HEX0,
+  output  logic [6:0] HEX1,
+  output  logic       LEDR0
+);
+
+  logic [1:0] encoded;
+  
+  priority_encoder p_enc(
+    .d  (SW),
+    .y  (encoded),
+    .en (LEDR0)
+  );
+  
+  sseg_decoder dec1(
+    .num  ({2'd00, encoded}),
+    .hex  (HEX1)
+  );
+  
+  sseg_decoder dec0(
+    .num  (SW),
+    .hex  (HEX0)
+  );
+
+endmodule
+```
+
+
+
+
+```sv : priority_encoder.sv
+module priority_encoder(
+  input   logic [3:0] d,  
+  output  logic [1:0] y,  
+  output  logic       en  
+);
+!!! 
+!!!   assign en = |d; // d[3] | d[2] | d[1] | d[0] と同じ
+!!! 
+!!!   always_comb begin
+#     casez (d)
+#       4'b1??? : y = 2'b11;
+#       4'b01?? : y = 2'b10;
+#       4'b001? : y = 2'b01;
+#       4'b0001 : y = 2'b00;
+#       default : y = 2'b00;
+#      endcase
+#  end
+#   
+endmodule
+```
+
+
 
 図5.1の回路モジュール sseg_adder はその内部で、adder モジュールと sseg_decoder モジュールを利用しています。
 adder モジュールの入力 a と b には、sseg_adder の入力 num_a と num_b がそれぞれ接続されています。

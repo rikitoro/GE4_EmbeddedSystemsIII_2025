@@ -1,186 +1,125 @@
-# 5章 モジュールを組み合わせた回路設計
+# 3章 レジスタ・カウンタの設計
 
-System Verilog ではモジュールを組み合わせ、より大規模な回路モジュールを構築することができます。
-本章では、これまでに設計した様々な回路モジュールを組み合わせて新しい回路を設計する方法を学びます。
+本章では、always_ff 文を用いてレジスタやカウンタを設計する方法を学びます。
 
-## 7セグメント表示付き加算器
+## レジスタ
 
-4章のリスト4.1(もしくはリスト2.10)の adder モジュール(4ビット加算器)とリスト4.2の sseg_decoder モジュール(7セグメントデコーダ)を組み合わせ、図5.1のような回路を設計することを考えます。
+図3.1に示したクロック同期の4ビットレジスタを設計します。
+この回路はリスト3.1の register モジュールのように記述できます。
 
-![7セグメント表示機能付き加算器](./assets/sseg_adder.png "7セグメント表示機能付き加算器")
+![4ビットレジスタ](./assets/register.png "4ビットレジスタ")
 
-<図5.1 7セグメント表示機能付き加算器>
+<図3.1 4ビットレジスタ>
 
-図5.1の回路モジュール sseg_adder はその内部で、adder モジュールと sseg_decoder モジュールを利用しています。
-adder モジュールの入力 a と b には、sseg_adder の入力 num_a と num_b がそれぞれ接続されています。
-同様に、adder モジュールの出力 carry と sseg_decoder モジュールの出力 y は、sseg_adder モジュールの出力 carry と hex_pattern にそれぞれ接続されています。
-adder モジュールの出力 sum と sseg_decoder モジュールの入力 num は、sseg_adder の内部信号 sum によって接続されています。
-このような、 sseg_adder モジュールはリスト5.1のように記述できます。
 
-<リスト5.1 sseg_adder モジュール(7セグメント表示付き加算器)>
+<リスト3.1 register モジュール (4ビットレジスタ)>
 
-```SystemVerilog : sseg_adder.sv
-module sseg_adder (
-  input   logic [3:0] num_a,
-  input   logic [3:0] num_b,
-  output  logic [6:0] hex_pattern,
-  output  logic       carry
+```SystemVerilog : register.sv
+module register(
+  input   logic         clock,
+  input   logic   [3:0] d,
+  output  logic   [3:0] q
 );
-  logic [3:0] sum; // (1) sseg_adderモジュールの内部信号
 
-  adder adder_unit ( // (2) adder モジュールの呼び出し(インスタンス化)
-    .a      (num_a), // (3) adder モジュールの入力 a に sseg_adder の入力 num_a を接続
-    .b      (num_b),
-    .sum    (sum),
-    .carry  (carry)
-  );
-
-  sseg_decoder decoder_unit (
-    .num  (sum),
-    .y    (hex_pattern)
-  );  
+  always_ff @ (posedge clock) begin // (1) clockの立ち上がりのタイミングで起動
+    q <= d; // (2) qにdの値を代入する(ノンブロッキング代入)
+  end
 
 endmodule
 ```
 
-リスト中(1)では sseg_adder モジュールの内部信号 sum を定義しています。
-sseg_adderから見て下位モジュールとなる、adder モジュールの呼び出しは、(2)において行われます。
-下位モジュールの呼び出しはインスタンス化とも呼ばれます。
-モジュールは回路の設計図を与えるもので、インスタンスはその設計図を実現する回路を実際に配備したものだとイメージするとよいでしょう。
-モジュールのインスタンス化は、モジュール名 <module_name> とインスタンス名 <instance_name> およびポートリスト <port_list> (後程説明)を指定して下記のように記述します。
-```
-<module_name> <instance_name>(<port_list>);
-```
-リスト中(2)においては、adder モジュールのインスタンス名 adder_unit のインスタンス
-を生成しています。
+レジスタのようにフリップフロップによって構成されるような回路は always_ff 文を使って設計することができます。
+always_ff 文は @ 以下に示された信号が変化したときに、begin と end で囲われた部分が実行されるような回路を構成します。
+リスト3.1の(1)の部分では、clock 信号の立ち上がり(posedge)のタイミングが指定してあります。
+すなわち、clock 信号の立ち上がりのタイミングで(2)の`q <= d`が実行されます。
+これは信号 q に信号 d の値を代入することを示しています。
 
-ポートリスト <port_list> では、下位モジュールの入出力信号と上位モジュール(ここではsseg_adder)の信号との接続を記述します。
-例えばリスト中(3)では下位モジュール adder モジュールの入力信号 a に、上位モジュールである sseg_adder モジュールの信号 num_a を接続することを示しています。
+この register モジュールの動作をまとめると、clock 信号の立ち上がりのタイミングで入力信号 d の値を取り込み、その値を q に保持し出力することになります。
+図3.2にこのregister モジュールの動作例をタイムチャートで示します。
+上記の動作を確認してください。
+
+![register モジュールの動作例](./assets/timechart_register.png)
+
+<図3.2 register モジュールの動作例>
+
+今回、リスト4.1の always_ff 文で用いた `q <= d` のような `<=` による代入はノンブロッキング代入と呼ばれます。
+フリップフロップによって構成されるような回路を設計するときは原則としてノンブロッキング代入を用いるのが良い習慣です。
 
 ### 演習
 
-リスト5.1 sseg_adder モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
-sseg_adder モジュールの入出力信号は表5.1のように DE0-CV の入出力デバイスに割り当ててください。
+リスト3.1 register モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
 
-なお、リスト4.1 adder モジュールとリスト4.2 sseg_decoder モジュールも必要となりますので、プロジェクトにそれらのデザインファイルも追加しましょう。
+register モジュールの入出力信号は表3.1のように DE0-CV の入出力デバイスに割り当てましょう。
 
-<表5.1 sseg_adder モジュールの入出力のデバイスへの割り当て>
+<表3.1 register モジュールの入出力のデバイスへの割り当て>
 
 |信号名|割り当てデバイス|入出力|
 |------|----------------|------|
-|num_a[3:0]       | SW7-SW4     | input |
-|num_b[3:0]       | SW3-SW0     | input |
-|hex_pattern[6:0] | HEX06-HEX00 | output |
-|carry            | LEDR0       | output |
+|clock | KEY0           | input |
+|d[3:0]| SW3-SW0          | input |
+|q[3:0]| LEDR3-LEDR0       | output |
+
+## 非同期リセット付きレジスタ
+
+先ほど設計したクロック同期の4ビットレジスタに、非同期リセット機能を追加した回路の設計を考えます。
+図3.3のようにリセット入力信号 n_reset を追加します。
+n_reset はアクティブローとします。
+つまり、通常時は n_reset には 1 が入力され、n_reset が0になったときにリセット機能が働くものとします。
+
+この非同期リセット付き4ビットレジスタは、リスト3.2の register_ar モジュールのように記述できます。
 
 
-## 16進カウンタ
+![非同期リセット付き4ビットレジスタ](./assets/register_ar.png "非同期リセット付き4ビットレジスタ")
 
-リスト3.1の4ビットレジスタ register モジュールと、リスト4.1の4ビット加算器 adder モジュールとを図5.2のように組み合わせることで、クロックの立ち上がりをカウントする16進カウンタを作ることができます。
+<図3.3 非同期リセット付き4ビットレジスタ>
 
-![16進カウンタ](./assets/counter16.png "16進カウンタ")
+<リスト3.2 register_ar モジュール(非同期リセット付き4ビットレジスタ)>
 
-<図5.2 16進カウンタ counter16 >
-
-この16進カウンタ回路 counter16 モジュールの設計例をリスト5.2に示します。
-
-<リスト5.2 counter16 モジュール (16進カウンタ)>
-
-```SystemVerilog : counter16
-module counter16 (
+```SystemVerilog : register_ar.sv
+module register_ar( // asynchronous reset
   input   logic       clock,
-  output  logic [3:0] count_binary
+  input   logic       n_reset, // active low (0になったらリセット)
+  input   logic [3:0] d,
+  output  logic [3:0] q
 );
-  logic [3:0] count;
-  logic [3:0] next_count;
 
-  assign count_binary = count;
-
-  adder add_1 (
-    .a      (count),
-    .b      (4'b0001),
-    .sum    (next_count)
-  );
-
-  register register_4bit(
-    .clock  (clock),
-    .d      (next_count),
-    .q      (count)
-  );
+  always_ff @ (posedge clock, negedge n_reset) begin
+    if (n_reset == 1'b0) begin
+      q <= 4'b0000;   // reset
+    end else begin
+      q <= d;
+    end
+  end
 
 endmodule
 ```
 
-### 演習
+今回の always_ff 文では起動されるタイミングとして、 clock の立ち上がりと n_reset の立下り(negedge)の両方が指定されています。
+また always_ff 文中では if 文が用いられており、n_reset が0の時は q をリセット(0を代入)し、そうでない場合は d の値を q に代入することを記述しています。
 
-リスト5.2 counter16 モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
-counter16 モジュールの入出力信号は表5.2のように DE0-CV の入出力デバイスに割り当ててください。
+このように条件により異なる動作をする回路を記述したい場合、 always_ff 文や4章で示す always_comb 文などの always 文中において、 if 文を使うことができます。
+なお、always 文の外側では if 文を使うことはできません。
 
-なお、リスト4.1 adder モジュールとリスト3.1 register モジュールも必要となりますので、プロジェクトにそれらのデザインファイルも追加しましょう。
+図3.4に register_ar モジュールの動作例をタイムチャートで示します。
+n_reset の立下りのタイミングで q がリセットされていることを確認しましょう。
+また、clock の立ち上がりのタイミングでも、 n_reset が0となっていれば同様にリセットが起こることに注意しましょう。
 
-<表5.2 counter16 モジュールの入出力のデバイスへの割り当て>
+![register_ar モジュールの動作例](./assets/timechart_register_ar.png "register_ar モジュールの動作例")
 
-|信号名|割り当てデバイス|入出力|
-|------|----------------|------|
-|clock            | KEY0        | input |
-|count_binary[3:0] | LEDR3-LEDR0 | output |
-
-
-## 7セグメント表示付き加算累積器
-
-リスト3.1の4ビットレジスタ register モジュールと、リスト4.1の4ビット加算器 adder モジュール、リスト4.2の7セグメントデコーダ sseg_decoder モジュールの3つのモジュールを図5.3のように組み合わることで、7セグメント表示付き加算累積器を作ることができます。
-
-![7セグメント表示付き加算累積器](./assets/add_accumulator.png "7セグメント表示付き加算累積器")
-
-<図5.3 7セグメント表示付き加算累積器>
-
-この7セグメント表示付き加算累積器 add_accumulator モジュールはリスト5.3のように記述できます。
-
-<リスト5.3 add_accumulator (7セグメント表示付き加算累積器)>
-
-```SystemVerilog : add_accumulator.sv
-module add_accumulator (
-  input   logic       clock,
-  input   logic [3:0] num,  
-  output  logic [6:0] hex_pattern
-);
-  logic [3:0] next_result;
-  logic [3:0] result;
-
-  adder adder (
-    .a      (result),
-    .b      (num),
-    .sum    (next_result)
-  );
-
-  register register (
-    .clock  (clock),
-    .d      (next_result),
-    .q      (result)
-  );
-
-  sseg_decoder decoder (
-    .num    (result),
-    .y      (hex_pattern)
-  );
-
-endmodule
-```
-
-複数のモジュールを組み合わせ回路を設計するときは、まず、図5.3のようなブロック図を描き、上位および下位の各モジュールの入出力信号(インターフェース)とその間の接続を整理しましょう。
-そのうえでリスト5.3のような HDL 記述に直すと、間違いが少なくなります。
+<図3.4 register_ar モジュールの動作例>
 
 ### 演習
 
-リスト5.3 add_accumulator モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
-add_accumulator モジュールの入出力信号は表5.3のように DE0-CV の入出力デバイスに割り当ててください。
+リスト3.2 register_ar モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
 
-なお、リスト4.1 adder モジュールとリスト3.1 register モジュール、およびリスト4.2の7セグメントデコーダ sseg_decoder も必要となりますので、プロジェクトにそれらのデザインファイルも追加しましょう。
+register_ar モジュールの入出力信号は表3.2のように DE0-CV の入出力デバイスに割り当てましょう。
 
-<表5.3 add_accumulator モジュールの入出力のデバイスへの割り当て>
+<表3.2 register_ar モジュールの入出力のデバイスへの割り当て>
 
 |信号名|割り当てデバイス|入出力|
 |------|----------------|------|
-|clock            | KEY0        | input |
-|num[3:0]         | SW3-SW0     | input |
-|hex_pattern[6:0] | HEX06-HEX00 | output |
+|clock | KEY0           | input |
+|n_reset| KEY1          | input |
+|d[3:0]| SW3-SW0          | input |
+|q[3:0]| LEDR3-LEDR0       | output |
+

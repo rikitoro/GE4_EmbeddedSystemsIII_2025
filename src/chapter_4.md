@@ -12,6 +12,11 @@ System Verilog ではモジュールを組み合わせ、より大規模な回�
 
 <図4.1 7セグメント表示付きプライオリティエンコーダ>
 
+```admonish example
+
+サンプルプログラム
+```
+
 ```sv : shell.sv
 module shell(
   input   logic [3:0] SW,
@@ -40,6 +45,7 @@ module shell(
 
 endmodule
 ```
+
 
 ```sv : priority_encoder.sv
 module priority_encoder(

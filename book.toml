@@ -8,6 +8,10 @@ title = "組込みシステムIII"
 # codeblock にファイル名を表示 see https://crates.io/crates/mdbook-codename
 [preprocessor.codename] 
 
+[preprocessor.admonish]
+command = "mdbook-admonish"
+assets_version = "3.0.3" # do not edit: managed by `mdbook-admonish install`
+
 # pagetoc https://crates.io/crates/mdbook_pagetoc/0.2.0
 [preprocessor.pagetoc]
 
@@ -15,7 +19,7 @@ title = "組込みシステムIII"
 mathjax-support = true
 # 日本語検索 see https://blog.bridgey.dev/2023/06/14/search-japanese-on-mdbook/
 additional-js   = ["assets/fzf.umd.js", "assets/elasticlunr.js", "theme/pagetoc.js"]
-additional-css  = ["theme/pagetoc.css"]
+additional-css  = ["theme/pagetoc.css", "./mdbook-admonish.css"]
 
 [output.html.code.hidelines]
 sv = "!!!"

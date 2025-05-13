@@ -19,7 +19,7 @@ System Verilog ではモジュールを組み合わせ、より大規模な回�
 ここでは、これらの入出力信号について、入力の SW は実習ボードのスライドスイッチへ接続し、
 出力の LEDR は実習ボードの LED へ、HEX1 と HEX0 は 7 セグメント LED ディスプレイへ接続することを想定しています。
 
-なお、Quartus Prime では回路を構成するモジュールのうち一番外側で FPGA の入出力に直接つながる回路モジュールの名前を、
+なお、Quartus Prime では回路を構成するモジュールのうち一番外側で FPGA の入出力に直接つながる回路モジュールの名前を
 プロジェクトの Top level design entity の名前にする必要があります。
 
 それでは、Quartus Prime で Top level design entity を shell と設定したプロジェクトを作成しましょう。

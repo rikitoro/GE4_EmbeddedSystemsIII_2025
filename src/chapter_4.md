@@ -6,17 +6,28 @@ System Verilog ではモジュールを組み合わせ、より大規模な回�
 ## 4.1 7 セグメント表示付きプライオリティエンコーダ
 
 3 章ではプライオリティエンコーダ (priori_encoder) や 7 セグメントデコーダ (sseg_decoder) を作成しました。
-ここでは、プライオリティエンコーダの出力結果をさらに 7 セグメントデコーダを用いて変換し 7 セグメント LED 上で結果を表示する回路を設計します。
+ここでは、プライオリティエンコーダへの入力と出力とをそれぞれ 7 セグメントデコーダを用いて変換し、16進数表示のパターンとして 7 セグメント LED 上で表示する回路を設計します。
+
+図 4.1a のように、priori_encoder を 1 個と sseg_decoder を 2 個組み合わせてより大きな回路モジュール shell を設計していきます。
 
 ![7セグメント表示付きプライオリティエンコーダ](./assets/chap04_penc_hex.svg)
 
-<図4.1 7セグメント表示付きプライオリティエンコーダ>
+<図 4.1a 7セグメント表示付きプライオリティエンコーダ>
 
-```admonish example
+外側の shell モジュールは、入力として 4 ビットの信号 SW があり、
+出力としては、1 ビットの信号 LEDR と 7 ビットの信号 HEX1, HEX0 があります。
+ここでは、これらの入出力信号について、入力の SW は実習ボードのスライドスイッチへ接続し、
+出力の LEDR は実習ボードの LED へ、HEX1 と HEX0 は 7 セグメント LED ディスプレイへ接続することを想定しています。
 
-サンプルプログラム
-```
+なお、Quartus Prime では回路を構成するモジュールのうち一番外側で FPGA の入出力に直接つながる回路モジュールの名前を、
+プロジェクトの Top level design entity の名前にする必要があります。
 
+それでは、Quartus Prime で Top level design entity を shell と設定したプロジェクトを作成しましょう。
+
+プロジェクトを作成したら、リスト 4.1a に示した shell モジュールを定義したファイルをプロジェクトに登録してください。
+なお、ここでは shell モジュールの入出力の定義だけを記述しています。モジュールの内部の記述は後程行います。
+
+<リスト4.1a shell モジュール (作成途中版) >
 ```sv : shell.sv
 module shell(
   input   logic [3:0] SW,
@@ -24,29 +35,16 @@ module shell(
   output  logic [6:0] HEX1,
   output  logic       LEDR0
 );
-
-  logic [1:0] encoded;
-  
-  priority_encoder p_enc(
-    .d  (SW),
-    .y  (encoded),
-    .en (LEDR0)
-  );
-  
-  sseg_decoder dec1(
-    .num  ({2'd00, encoded}),
-    .hex  (HEX1)
-  );
-  
-  sseg_decoder dec0(
-    .num  (SW),
-    .hex  (HEX0)
-  );
-
+  // 回路の中身は後で作成 
 endmodule
 ```
 
+shell モジュールの内部では、priority_encoder モジュールと sseg_decoder モジュールを呼び出して使用します。
+したがって、これらのモジュールを定義したファイルも必要となりますので、プロジェクトに追加して登録してください。
+(プロジェクトには shell.sv, priotiry_encode.sv, sseg_decoder.sv のファイルが登録されていることを確認してください)
 
+<リスト4.1b priority_encoder モジュール (再掲) >
+~~~admonish title="priority_encoder.sv", collapsible=true
 ```sv : priority_encoder.sv
 module priority_encoder(
   input   logic [3:0] d,
@@ -68,7 +66,10 @@ module priority_encoder(
   
 endmodule
 ```
+~~~
 
+<リスト4.1c sseg_decoder モジュール (再掲) >
+~~~admonish title="sseg_decoder.sv", collapsible=true
 ```sv : sseg_decoder.sv
 module sseg_decoder(
   input   logic [3:0]   num,
@@ -99,6 +100,42 @@ module sseg_decoder(
 
 endmodule
 ```
+~~~
+
+図 4.1a をもとにすると shell モジュールの内部はリスト 4.1d のように記述することができます。
+
+<リスト4.1d shell モジュール (完成版) >
+```sv : shell.sv
+module shell(
+  input   logic [3:0] SW,
+  output  logic [6:0] HEX0,
+  output  logic [6:0] HEX1,
+  output  logic       LEDR0
+);
+
+  logic [1:0] encoded;
+  
+  priority_encoder p_enc(
+    .d  (SW),
+    .y  (encoded),
+    .en (LEDR0)
+  );
+  
+  sseg_decoder dec1(
+    .num  ({2'd00, encoded}),
+    .hex  (HEX1)
+  );
+  
+  sseg_decoder dec0(
+    .num  (SW),
+    .hex  (HEX0)
+  );
+
+endmodule
+```
+
+
+
 
 ### 演習
 

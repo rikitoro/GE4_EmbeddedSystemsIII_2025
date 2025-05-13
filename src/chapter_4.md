@@ -5,10 +5,10 @@ System Verilog ではモジュールを組み合わせ、より大規模な回�
 
 ## 4.1 7 セグメント表示付きプライオリティエンコーダ
 
-3 章ではプライオリティエンコーダ (priori_encoder) や 7 セグメントデコーダ (sseg_decoder) を作成しました。
+3 章ではプライオリティエンコーダ (priority_encoder) や 7 セグメントデコーダ (sseg_decoder) を作成しました。
 ここでは、プライオリティエンコーダへの入力と出力とをそれぞれ 7 セグメントデコーダを用いて変換し、16進数表示のパターンとして 7 セグメント LED 上で表示する回路を設計します。
 
-図 4.1a のように、priori_encoder を 1 個と sseg_decoder を 2 個組み合わせてより大きな回路モジュール shell を設計していきます。
+図 4.1a のように、priority_encoder を 1 個と sseg_decoder を 2 個組み合わせてより大きな回路モジュール shell を設計していきます。
 
 ![7セグメント表示付きプライオリティエンコーダ](./assets/chap04_penc_hex.svg)
 
@@ -200,7 +200,7 @@ shell モジュールのコードの最後の部分では、もう一つ ssed_de
 shell モジュールを Top level design entity として
 その入出力の信号を実習ボードのデバイスへ表 4.1 のように割り当ててください。
 
-なお、Quartus Prime のプロジェクトを作成する際は、トップレベルエンティティとして shell モジュールを指定してください
+なお、Quartus Prime のプロジェクトを作成する際は、Top level design entity として shell モジュールを指定してください
 また、shell モジュールに加え、priority_encoder モジュールと sseg_decoder モジュールを定義しているファイルもプロジェクトに登録しておく必要があります。注意してください。
 
 <表4.1 shell モジュールの入出力のデバイスへの割り当て>

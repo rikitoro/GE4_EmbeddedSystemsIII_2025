@@ -59,28 +59,59 @@ endmodule
 ---
 ## 5.3 同期リセット付きレジスタ
 
+--- 
 
-リスト 5.2 の register_ar モジュールは、同期リセット機能を持つレジスタの設計例です。
+## 5.4 書き込み許可付きレジスタ
+
+
 
 ```sv : register_r.sv
-module register_ar #(
+module register_r #(
   parameter WIDTH = 4,
-  parameter logic [WIDTH-1:0] RESET_VALUE = '0 // リセット値
-)
-(
-  input   logic         clock,
-  input   logic         reset_n, // active low
+  parameter logic [WIDTH-1:0] RESET_VALUE = '0
+)(
+  input   logic             clock,
+  input   logic             reset_n, // reset (active-low)
+  input   logic             en,      // write-enable
   input   logic [WIDTH-1:0] d,
   output  logic [WIDTH-1:0] q
 );
 
   always_ff @ (posedge clock) begin
     if (reset_n == 1'b0) begin
-      q \<= RESET_VALUE;   // reset
-    end else begin
+      q <= RESET_VALUE;
+    end else if (en == 1'b1) begin 
       q <= d;
     end
+      
   end
+  
+endmodule
+```
+
+```sv : shell.sv 
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       KEY3,   // reset (active-low)
+  input   logic       SW9,    // write-enable
+  input   logic [7:0] SW,
+  output  logic [7:0] LEDR
+);
+
+  register_r #(
+    .WIDTH (8),
+    .RESET_VALUE (8'hAA)
+  ) reg_r(
+    .clock    (KEY0),
+    .reset_n  (KEY3),
+    .en       (SW9),
+    .d        (SW),
+    .q        (LEDR)
+  );
+ 
+endmodule
+```
+
 
 ---
 

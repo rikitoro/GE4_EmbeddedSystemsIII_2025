@@ -1,8 +1,88 @@
-# 3章 レジスタ・カウンタの設計
+# 5章 レジスタの設計
 
-本章では、always_ff 文を用いてレジスタやカウンタを設計する方法を学びます。
+本章では、always_ff 文を用いてレジスタを設計する方法を学びます。
+レジスターはフリップフロップを用いて構成される回路で、
+クロック信号の立ち上がりや立下りのタイミングで入力信号の値を取り込み、その値を保持する回路です。
+レジスタはデータを一時的に保存するためのメモリ素子であり、
+特に順序回路の設計において重要な構成要素です。
 
-## レジスタ
+## 5.1 4ビットレジスタ
+
+```sv : register4.sv
+module register4(
+  input   logic         clock,
+  input   logic   [3:0] d,
+  output  logic   [3:0] q
+);
+
+  always_ff @ (posedge clock) begin
+    q <= d;
+  end
+endmodule
+```
+
+---
+
+## 5.2 レジスタ (ビット幅のパラメータ化)
+リスト 5.1 の register モジュールは、ビット幅をパラメータとして指定できるようにしたレジスタの設計例です。
+
+```sv : register.sv
+module register #(parameter WIDTH = 4)(
+  input   logic         clock,
+  input   logic [WIDTH-1:0] d,
+  output  logic [WIDTH-1:0] q
+);
+
+  always_ff @ (posedge clock) begin
+    q <= d;
+  end
+endmodule
+```
+
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,
+  input   logic [7:0] SW,
+  output  logic [7:0] LEDR
+);
+
+  register #(.WIDTH(8)) reg8(
+    .clock  (KEY0),
+    .d      (SW),
+    .q      (LEDR)
+  ); 
+  
+endmodule
+
+```
+
+---
+## 5.3 同期リセット付きレジスタ
+
+
+リスト 5.2 の register_ar モジュールは、同期リセット機能を持つレジスタの設計例です。
+
+```sv : register_r.sv
+module register_ar #(
+  parameter WIDTH = 4,
+  parameter logic [WIDTH-1:0] RESET_VALUE = '0 // リセット値
+)
+(
+  input   logic         clock,
+  input   logic         reset_n, // active low
+  input   logic [WIDTH-1:0] d,
+  output  logic [WIDTH-1:0] q
+);
+
+  always_ff @ (posedge clock) begin
+    if (reset_n == 1'b0) begin
+      q \<= RESET_VALUE;   // reset
+    end else begin
+      q <= d;
+    end
+  end
+
+---
 
 図3.1に示したクロック同期の4ビットレジスタを設計します。
 この回路はリスト3.1の register モジュールのように記述できます。

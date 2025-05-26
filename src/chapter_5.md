@@ -266,7 +266,7 @@ endmodule
 ```
 
 この shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
-先ほどの演習と同様に、プロジェクトの Top level design entity として設定し、
+先ほどの演習と同様に、shell モジュールをプロジェクトの Top level design entity として設定し、
 その入出力を表 5.3 に示すように設定してください。
 
 

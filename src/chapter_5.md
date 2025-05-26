@@ -251,8 +251,8 @@ register_r モジュールのリセット値 `RESET_VALUE` を `4'b1111` に変�
 module shell(
   input   logic       KEY0,   // clock
   input   logic       SW9,    // reset
-  input   logic [4:0] SW,
-  output  logic [4:0] LEDR
+  input   logic [3:0] SW,
+  output  logic [3:0] LEDR
 );
 
   register_r #(.RESET_VALUE (4'b1111)) reg_r( // リセット値 RESET_VALUE を 4'b1111 に設定

@@ -1,10 +1,9 @@
 # 5章 レジスタの設計
 
 本章では、always_ff 文を用いてレジスタを設計する方法を学びます。
-レジスターはフリップフロップを用いて構成される回路で、
-クロック信号の立ち上がりや立下りのタイミングで入力信号の値を取り込み、その値を保持する回路です。
-レジスタはデータを一時的に保存するためのメモリ素子であり、
-特に順序回路の設計において重要な構成要素です。
+always_ff 文は、クロック信号の立ち上がりや立ち下がりなど、特定のタイミングで動作する回路を記述できます。
+この文を使用することで、フリップフロップの動作を簡潔に記述でき、レジスタやカウンタなどの同期回路を設計することが可能になります。
+
 
 ## 5.1 4ビットレジスタ
 
@@ -15,15 +14,38 @@ module register4(
   output  logic   [3:0] q
 );
 
-  always_ff @ (posedge clock) begin
+  always_ff @ (posedge clock) begin  // clock の立ち上がりで動作
     q <= d;
   end
 endmodule
 ```
 
+### 演習
+
+4ビットレジスタを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
+register4 モジュールを top level design entity とし、
+その入出力を表 5.1 に示すように設定してください。
+
+<表 5.1 shell モジュールの入出力のデバイスへの割り当て>
+
+| 信号名   |割り当てデバイス| 入出力 |
+|----------|----------------|--------|
+| clock    | KEY0           | input  |
+| d[3:0]   | SW3-SW0        | input  |
+| q[3:0]   | LEDR3-LEDR0    | output |
+
+なお、clock 信号として使用しているプッシュスイッチの KEY0 は、
+ボタンを押し下げている間は 0 となり、離すと 1 となります。
+また、KEY0 から KEY3 にはチャタリング防止のための回路が組み込まれています。
+(チャタリングとは、スイッチを切り替えたとき接点が何度も開閉する現象のことです。)
+
+レジスタの出力が変化するのは、KEY0 を押し下げた時なのか、それとも離した時なのか、そのタイミングを注意深く観察してください。
+
+
 ---
 
 ## 5.2 レジスタ (ビット幅のパラメータ化)
+
 リスト 5.1 の register モジュールは、ビット幅をパラメータとして指定できるようにしたレジスタの設計例です。
 
 ```sv : register.sv
@@ -57,13 +79,8 @@ endmodule
 ```
 
 ---
+
 ## 5.3 同期リセット付きレジスタ
-
---- 
-
-## 5.4 書き込み許可付きレジスタ
-
-
 
 ```sv : register_r.sv
 module register_r #(
@@ -71,14 +88,79 @@ module register_r #(
   parameter logic [WIDTH-1:0] RESET_VALUE = '0
 )(
   input   logic             clock,
-  input   logic             reset_n, // reset (active-low)
+  input   logic             reset, // reset
+  input   logic [WIDTH-1:0] d,
+  output  logic [WIDTH-1:0] q
+);
+
+  always_ff @ (posedge clock) begin
+    if (reset == 1'b1) begin
+      q <= RESET_VALUE;
+    end else begin 
+      q <= d;
+    end 
+  end
+```
+
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       SW9,    // reset
+  input   logic [7:0] SW,
+  output  logic [7:0] LEDR
+);
+
+  register_r reg_r(
+    .clock    (KEY0),
+    .reset    (SW9),
+    .d        (SW),
+    .q        (LEDR)
+  );
+endmodule
+```
+
+### 演習 1
+
+### 演習 2
+
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       SW9,    // reset
+  input   logic [7:0] SW,
+  output  logic [7:0] LEDR
+);
+
+  register_r #(.RESET_VALUE (4'b1111)) reg_r(
+    .clock    (KEY0),
+    .reset    (SW9),
+    .d        (SW),
+    .q        (LEDR)
+  );
+
+endmodule
+```
+
+
+--- 
+
+## 5.4 書き込み許可付きレジスタ
+
+
+```sv : register_r.sv
+module register_r_en #(
+  parameter WIDTH = 4,
+  parameter logic [WIDTH-1:0] RESET_VALUE = '0
+)(
+  input   logic             clock,
+  input   logic             reset, // reset (active-low)
   input   logic             en,      // write-enable
   input   logic [WIDTH-1:0] d,
   output  logic [WIDTH-1:0] q
 );
 
   always_ff @ (posedge clock) begin
-    if (reset_n == 1'b0) begin
+    if (reset == 1'b1) begin
       q <= RESET_VALUE;
     end else if (en == 1'b1) begin 
       q <= d;
@@ -89,6 +171,7 @@ module register_r #(
 endmodule
 ```
 
+
 ```sv : shell.sv 
 module shell(
   input   logic       KEY0,   // clock
@@ -98,139 +181,119 @@ module shell(
   output  logic [7:0] LEDR
 );
 
-  register_r #(
-    .WIDTH (8),
-    .RESET_VALUE (8'hAA)
-  ) reg_r(
-    .clock    (KEY0),
-    .reset_n  (KEY3),
-    .en       (SW9),
-    .d        (SW),
-    .q        (LEDR)
+  register_r_en reg_r(
+    .clock  (KEY0),
+    .reset  (KEY3),
+    .en     (SW9),
+    .d      (SW),
+    .q      (LEDR)
   );
  
 endmodule
 ```
 
+### 演習 
 
 ---
 
-図3.1に示したクロック同期の4ビットレジスタを設計します。
-この回路はリスト3.1の register モジュールのように記述できます。
+## 5.5 10進カウンタ
 
-![4ビットレジスタ](./assets/register.png "4ビットレジスタ")
-
-<図3.1 4ビットレジスタ>
-
-
-<リスト3.1 register モジュール (4ビットレジスタ)>
-
-```SystemVerilog : register.sv
-module register(
-  input   logic         clock,
-  input   logic   [3:0] d,
-  output  logic   [3:0] q
-);
-
-  always_ff @ (posedge clock) begin // (1) clockの立ち上がりのタイミングで起動
-    q <= d; // (2) qにdの値を代入する(ノンブロッキング代入)
-  end
-
-endmodule
-```
-
-レジスタのようにフリップフロップによって構成されるような回路は always_ff 文を使って設計することができます。
-always_ff 文は @ 以下に示された信号が変化したときに、begin と end で囲われた部分が実行されるような回路を構成します。
-リスト3.1の(1)の部分では、clock 信号の立ち上がり(posedge)のタイミングが指定してあります。
-すなわち、clock 信号の立ち上がりのタイミングで(2)の`q <= d`が実行されます。
-これは信号 q に信号 d の値を代入することを示しています。
-
-この register モジュールの動作をまとめると、clock 信号の立ち上がりのタイミングで入力信号 d の値を取り込み、その値を q に保持し出力することになります。
-図3.2にこのregister モジュールの動作例をタイムチャートで示します。
-上記の動作を確認してください。
-
-![register モジュールの動作例](./assets/timechart_register.png)
-
-<図3.2 register モジュールの動作例>
-
-今回、リスト4.1の always_ff 文で用いた `q <= d` のような `<=` による代入はノンブロッキング代入と呼ばれます。
-フリップフロップによって構成されるような回路を設計するときは原則としてノンブロッキング代入を用いるのが良い習慣です。
-
-### 演習
-
-リスト3.1 register モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
-
-register モジュールの入出力信号は表3.1のように DE0-CV の入出力デバイスに割り当てましょう。
-
-<表3.1 register モジュールの入出力のデバイスへの割り当て>
-
-|信号名|割り当てデバイス|入出力|
-|------|----------------|------|
-|clock | KEY0           | input |
-|d[3:0]| SW3-SW0          | input |
-|q[3:0]| LEDR3-LEDR0       | output |
-
-## 非同期リセット付きレジスタ
-
-先ほど設計したクロック同期の4ビットレジスタに、非同期リセット機能を追加した回路の設計を考えます。
-図3.3のようにリセット入力信号 n_reset を追加します。
-n_reset はアクティブローとします。
-つまり、通常時は n_reset には 1 が入力され、n_reset が0になったときにリセット機能が働くものとします。
-
-この非同期リセット付き4ビットレジスタは、リスト3.2の register_ar モジュールのように記述できます。
-
-
-![非同期リセット付き4ビットレジスタ](./assets/register_ar.png "非同期リセット付き4ビットレジスタ")
-
-<図3.3 非同期リセット付き4ビットレジスタ>
-
-<リスト3.2 register_ar モジュール(非同期リセット付き4ビットレジスタ)>
-
-```SystemVerilog : register_ar.sv
-module register_ar( // asynchronous reset
+```sv : counter10.sv
+module counter10(
   input   logic       clock,
-  input   logic       n_reset, // active low (0になったらリセット)
-  input   logic [3:0] d,
-  output  logic [3:0] q
+  input   logic       reset,
+  output  logic [3:0] count
 );
 
-  always_ff @ (posedge clock, negedge n_reset) begin
-    if (n_reset == 1'b0) begin
-      q <= 4'b0000;   // reset
-    end else begin
-      q <= d;
-    end
-  end
+  logic [3:0] count_next;
+
+  assign count_next = (count == 4'd9) ? 4'd0 : count + 1'd1;
+
+  regiser_r reg(
+    .clock  (clock),
+    .reset  (reset),
+    .d      (count_next),
+    .q      (count)
+  );
 
 endmodule
 ```
 
-今回の always_ff 文では起動されるタイミングとして、 clock の立ち上がりと n_reset の立下り(negedge)の両方が指定されています。
-また always_ff 文中では if 文が用いられており、n_reset が0の時は q をリセット(0を代入)し、そうでない場合は d の値を q に代入することを記述しています。
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       SW9,    // reset
+  output  logic [3:0] LEDR
+);
 
-このように条件により異なる動作をする回路を記述したい場合、 always_ff 文や4章で示す always_comb 文などの always 文中において、 if 文を使うことができます。
-なお、always 文の外側では if 文を使うことはできません。
-
-図3.4に register_ar モジュールの動作例をタイムチャートで示します。
-n_reset の立下りのタイミングで q がリセットされていることを確認しましょう。
-また、clock の立ち上がりのタイミングでも、 n_reset が0となっていれば同様にリセットが起こることに注意しましょう。
-
-![register_ar モジュールの動作例](./assets/timechart_register_ar.png "register_ar モジュールの動作例")
-
-<図3.4 register_ar モジュールの動作例>
+  counter10 counter(
+    .clock  (KEY0),
+    .reset  (SW9),
+    .count  (LEDR)
+  );
+endmodule
+```
 
 ### 演習
 
-リスト3.2 register_ar モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
+---
 
-register_ar モジュールの入出力信号は表3.2のように DE0-CV の入出力デバイスに割り当てましょう。
+## 5.6 N 進カウンタ
 
-<表3.2 register_ar モジュールの入出力のデバイスへの割り当て>
+```sv : counterN.sv
+module counterN #(
+  parameter WIDTH = 4,
+  parameter [WIDTH-1:0] N = '1
+)(
+  input   logic             clock,
+  input   logic             reset,
+  output  logic [WIDTH-1:0] count
+);
 
-|信号名|割り当てデバイス|入出力|
-|------|----------------|------|
-|clock | KEY0           | input |
-|n_reset| KEY1          | input |
-|d[3:0]| SW3-SW0          | input |
-|q[3:0]| LEDR3-LEDR0       | output |
+  logic [WIDTH-1:0] count_next;
 
+  assign count_next = (count == N-1) ? '0 : count + 1'd1;
+
+  register_r #(.WIDTH (WIDTH)) reg(
+    .clock  (clock),
+    .reset  (reset),
+    .d      (count_next),
+    .q      (count)
+  );
+
+endmodule
+```
+
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       SW9,    // reset
+  output  logic [6:0] HEX1,
+  output  logic [6:0] HEX0
+);
+  
+  logic [5:0] count;
+
+  counterN #(.WIDTH(8), .N(42)) counter42(
+    .clock  (KEY0),
+    .reset  (SW9),
+    .count  (count)
+  );
+
+  // 7セグメントディスプレイへの変換
+  sseg_decoder dec1(
+    .num  ({2'b00, count[5:4]})
+    .hex  (HEX1)
+  );
+
+  sseg_decoder dec0(
+    .num  (count[3:0]),
+    .hex  (HEX0)
+  );
+
+endmodule
+```
+
+### 演習
+
+---

@@ -248,6 +248,7 @@ endmodule
 shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.3 に示すようにデバイスへ割り当ててください。
 
 <表 5.3 shell モジュールの入出力のデバイスへの割り当て>
+
 | 信号名    |割り当てデバイス| 入出力 |
 |-----------|----------------|--------|
 | KEY0      | KEY0           | input  |
@@ -431,6 +432,7 @@ endmodule
 ```
 
 ### 演習
+
 上記の counter10 モジュールを搭載した shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
 shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.5 に示すようにデバイスへ割り当ててください。
 
@@ -447,10 +449,17 @@ shell モジュールをプロジェクトの Top level design entity として�
 
 ## 5.6 N 進カウンタ
 
+先ほどの 10 進カウンタは、カウント値が 0 から 9 までの範囲で動作していました。
+ここでは、カウント値の範囲をパラメータ化して、任意の N 進カウンタを設計します。
+リスト 5.5 の counterN モジュールは、N 進カウンタの設計例です。
+ビット幅 `WIDTH` とカウント値の最大値 `MAX` をパラメータとして指定し、カウント値が 0 から MAX までをカウントアップします。
+これにより、N 進カウンタ (N = MAX + 1) を実現します。
+
+<リスト 5.5 counterN モジュール>
 ```sv : counterN.sv
 module counterN #(
   parameter WIDTH = 4,
-  parameter [WIDTH-1:0] N = '1
+  parameter [WIDTH-1:0] MAX = '1
 )(
   input   logic             clock,
   input   logic             reset,
@@ -459,9 +468,9 @@ module counterN #(
 
   logic [WIDTH-1:0] count_next;
 
-  assign count_next = (count == N-1) ? '0 : count + 1'd1;
+  assign count_next = (count == MAX) ? '0 : count + 1'd1;
 
-  register_r #(.WIDTH (WIDTH)) reg(
+  register_r #(.WIDTH (WIDTH)) reg_count(
     .clock  (clock),
     .reset  (reset),
     .d      (count_next),
@@ -471,28 +480,32 @@ module counterN #(
 endmodule
 ```
 
+counterN モジュールを使って、例えば 172 までカウントアップするカウンタを設計するには、次のように記述します。
+なお、カウント値が見やすくなるよう、カウンタの出力を 7セグメントディスプレイに変換するための sseg_decoder モジュールも使用しています。
+
 ```sv : shell.sv
 module shell(
   input   logic       KEY0,   // clock
   input   logic       SW9,    // reset
-  output  logic [6:0] HEX1,
-  output  logic [6:0] HEX0
+  output  logic [6:0] HEX1,   
+  output  logic [6:0] HEX0    
 );
   
-  logic [5:0] count;
+  logic [7:0] count;
 
-  counterN #(.WIDTH(8), .MAX(171)) counter172(
+  counterN #(.WIDTH(8), .MAX(171)) counter172( // ビット幅 8 ビット 最大値 171 のカウンタ
     .clock  (KEY0),
     .reset  (SW9),
     .count  (count)
   );
 
-  // 7セグメントディスプレイへの変換
+  // count の上位 4 ビットを7セグメントディスプレイに変換
   sseg_decoder dec1(
-    .num  ({2'b00, count[5:4]})
+    .num  (count[7:4]),
     .hex  (HEX1)
   );
 
+  // count の下位 4 ビットを7セグメントディスプレイに変換
   sseg_decoder dec0(
     .num  (count[3:0]),
     .hex  (HEX0)
@@ -502,5 +515,18 @@ endmodule
 ```
 
 ### 演習
+
+上記の counterN モジュールを搭載した shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
+shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.6 に示すようにデバイスへ割り当ててください。
+
+<表 5.6 shell モジュールの入出力のデバイスへの割り当て>
+
+| 信号名    |割り当てデバイス| 入出力 |
+|-----------|----------------|--------|
+| KEY0      | KEY0           | input  |
+| SW9       | SW9            | input  |
+| HEX1[6:0] | HEX16-HEX10    | output |
+| HEX0      | HEX06-HEX00    | output | 
+
 
 ---

@@ -287,6 +287,12 @@ endmodule
 
 ## 5.4 書き込み許可付きレジスタ
 
+5.3 の register_r モジュールは、リセット機能を持つレジスタでしたが、
+ここでは、書き込み許可 (write-enable) 機能を持つレジスタを設計します。
+リスト 5.4 の register_r_en モジュールは、書き込み許可付きレジスタの設計例です。
+入力として書き込み許可信号 `en` を追加し、`en` が 1 のときにのみ入力 `d` の値を出力 `q` に設定します。
+
+<リスト 5.4 register_r_en モジュール>
 
 ```sv : register_r_en.sv
 module register_r_en #(
@@ -312,6 +318,15 @@ module register_r_en #(
 endmodule
 ```
 
+always_ff 文の中では、if 文を用いて `reset` が 1 のときはリセット値 `RESET_VALUE` を `q` に代入し、
+`reset` が 0 のときは、`en` が 1 の場合に限り `d` の値を `q` に代入します。`en` が 0 のときは、`q` の値は変化しません。
+この register_r_en モジュールの動作例をタイムチャートで示すと図 5.4 のようになります。
+
+![register_r_en_timing](./assets/chap05_register_r_en_timing.svg)
+
+<図 5.4 register_r_en モジュールの動作例>
+
+この register_r_en モジュールを呼び出して使うには次のように記述します。
 
 ```sv : shell.sv 
 module shell(
@@ -352,7 +367,18 @@ shell モジュールをプロジェクトの Top level design entity として�
 
 ## 5.5 10進カウンタ
 
+レジスタを用いると、カウンタを設計することもできます。
+ここでは図 5.5 に示すような 10 進カウンタを設計します。
+このカウンタはクロック信号 `clock` の立ち上がりのタイミングで、
+4ビットの出力信号 `count[3:0]` を 0 から 9 までカウントアップし、9 に達すると 0 に戻る動作をします。
+
 ![counter10](./assets/chap05_counter10.svg)
+
+<図 5.5 10進カウンタ>
+
+リスト 5.4 の counter10 モジュールは、10 進カウンタの設計例です。
+
+<リスト 5.4 counter10 モジュール>
 
 ```sv : counter10.sv
 module counter10(
@@ -365,7 +391,7 @@ module counter10(
 
   assign count_next = (count == 4'd9) ? 4'd0 : count + 1'd1;
 
-  regiser_r reg(
+  regiser_r reg_count(
     .clock  (clock),
     .reset  (reset),
     .d      (count_next),
@@ -375,7 +401,19 @@ module counter10(
 endmodule
 ```
 
+4 ビットのレジスタに現在のカウント値を保持し、次のカウント値を計算するために `count_next` という信号を使用しています。
 
+コード中の assign 文の部分では、現在のカウント値 `count` が 9 のときは次のカウント値を 0 にリセットし、それ以外の場合は現在のカウント値に 1 を加えた値を次のカウント値としています。
+```sv :
+assign count_next = (count == 4'd9) ? 4'd0 : count + 1'd1;
+```
+このように、`count_next` は次のカウント値を計算するための信号であり、現在のカウント値 `count` に基づいて次の値を決定します。
+なお、この部分は図 5.5 の破線で囲んだ部分に対応しています。
+
+`register_r` モジュールでは次のカウント値 `count_next` を現在のカウント値 `count` に更新します。
+クロック信号 `clock` の立ち上がりエッジで `count_next` の値を `count` に代入し、出力しています。
+
+リスト 5.4 の counter10 モジュールを呼び出して使うには次のように記述します。
 
 ```sv : shell.sv
 module shell(
@@ -393,6 +431,17 @@ endmodule
 ```
 
 ### 演習
+上記の counter10 モジュールを搭載した shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
+shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.5 に示すようにデバイスへ割り当ててください。
+
+<表 5.5 shell モジュールの入出力のデバイスへの割り当て>
+
+| 信号名    |割り当てデバイス| 入出力 |
+|-----------|----------------|--------|
+| KEY0      | KEY0           | input  |
+| SW9       | SW9            | input  |
+| LEDR[3:0] | LEDR3-LEDR0    | output |
+
 
 ---
 

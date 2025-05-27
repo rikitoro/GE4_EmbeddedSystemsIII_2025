@@ -35,22 +35,22 @@ endmodule
 
 always_ff 文の部分を抜き出すと以下のようになります。
 
-```sv
+```sv :
 always_ff @ (posedge clock) begin // clock の立ち上がりで動作
   q <= d;   // d の値を q に代入 (ノンブロッキング代入)
 end
 ```
 
-ここでは、`posedge clock` というイベントが発生したときに、`q <= d;` の処理が実行されます。
+この always_ff 文では `posedge clock` というイベントが発生したときに、`q <= d;` の処理が実行されます。
 `posedge clock` は、`clock` 信号の立ち上がりエッジを意味します。
+`q <= d;` は、`d` の値を `q` に代入する処理です。
 すなわち、`clock` 信号が 0 から 1 に変化したときに、always_ff 文が起動し `q` に `d` の値が代入されます。
 
 `posedge clock` の代わりに `negedge clock` を使用すると、`clock` 信号の立ち下がりエッジで動作することになります。
 
-なお、`q <= d;` の部分はノンブロッキング代入と呼ばれ、`d` の値を `q` に代入することを意味します。
+なお、`q <= d;` の形の代入はノンブロッキング代入と呼ばれ、`d` の値を `q` に代入することを意味します。
 ノンブロッキング代入は、複数の代入が同時に実行される場合でも、各文が独立して動作することを保証します。
 always_ff 文による同期式回路の設計ではノンブロッキング代入を使用することが推奨されます。
-
 
 この 4 ビットレジスタの動作例をタイムチャートで示すと図 5.1b のようになります。
 
@@ -79,7 +79,7 @@ module shell(
 
 4ビットレジスタを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
 上記の shell モジュールをプロジェクトの Top level design entity として設定し、
-その入出力を表 5.1 に示すように設定してください。
+その入出力を表 5.1 に示すように割り当ててください。
 
 <表 5.1 shell モジュールの入出力のデバイスへの割り当て>
 
@@ -104,7 +104,6 @@ KEY1 から KEY3 のプッシュスイッチについても同様です。
 
 リスト 5.2 の register モジュールは、ビット幅をパラメータとして指定できるようにしたレジスタの設計例です。
 
-
 <リスト 5.2 register モジュール>
 
 ```sv : register.sv
@@ -120,12 +119,13 @@ module register #(parameter WIDTH = 4)( // パラメータ WIDTH の定義 デ�
 endmodule
 ```
 
-モジュールの定義において、モジュール名 `register` の後に `#(parameter WIDTH = 4)` と記述することで、`WIDTH` というパラメータを定義しています。
-また `WIDTH` のデフォルト値を 4 としています。
-このパラメータ `WIDTH` を使用して、入力 `d` と出力 `q` のビット幅を指定しています。　
-このようにすることで、モジュールを呼び出す際にビット幅を変更することができます。
+モジュールの定義において、モジュール名 `register` の後に `#(parameter WIDTH = 4)` と記述することで、
+`WIDTH` というパラメータとそのデフォルト値(ここでは `4` )を設定しています。
+モジュールの入出力信号の定義部分では、パラメータ `WIDTH` を使用して、
+入力 `d` と出力 `q` のビット幅を指定しています。　
+このようにパラメータを用いると、モジュールを呼び出す際にビット幅を変更することができます。
 
-モジュールを呼び出す際には、次のようにパラメータの値を指定します。
+モジュールを呼び出す際(インスタンス化)には、次のようにモジュールにパラメータの値を指定します。
 
 ```sv : shell.sv
 module shell(
@@ -147,8 +147,10 @@ endmodule
 
 ### 演習
 
-上記の 8 ビットレジスタを搭載した shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
-shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.2 に示すように設定してください。
+上記の 8 ビットレジスタを搭載した shell モジュールを実習ボード DE0-CV に実装して、
+その動作を確かめてみましょう。
+shell モジュールをプロジェクトの Top level design entity として設定し、
+その入出力を表 5.2 に示すようにデバイスへ割り当ててください。
 
 <表 5.2 shell モジュールの入出力のデバイスへの割り当て>
 
@@ -184,6 +186,8 @@ module register_r #(
       q <= d;           // reset が 0 のときは q に d の値を設定
     end 
   end
+
+endmodule
 ```
 
 この register_r モジュールは、2つのパラメータ `WIDTH` と `RESET_VALUE` を持ちます。
@@ -192,10 +196,19 @@ module register_r #(
 `RESET_VALUE` の設定値 `'0` (アポストロフィゼロ)は、左辺のビット幅に応じたゼロの値を意味します(ビット幅が自動的に設定されます)。
 
 モジュール内の記述では always_ff 文を使用して、クロック `clock` の立ち上がりエッジで動作する回路を設計しています。
-always 文の中では if 文を使用して条件により動作を変えることができます。
-ここでは、`reset` が 1 のときは `q` にリセット値 `RESET_VALUE` を設定し、そうでない場合は `d` の値を `q` に設定しています。
-このようにすることで、クロックの立ち上がりエッジで `reset` が 1 のときに `q` をリセット値に設定し、`reset` が 0 のときは `d` の値を保持することができます。
-なお、この　register_r モジュールのリセットはclock の立ち上がりエッジで動作する同期リセットであることに注意しましょう。
+always 文の中では以下のように if 文を使用して条件により動作を変えることができます。
+
+```sv :
+  always_ff @ (posedge clock) begin
+    if (reset == 1'b1) begin
+      q <= RESET_VALUE; // reset が 1 のときは q にリセット値を設定
+    end else begin 
+      q <= d;           // reset が 0 のときは q に d の値を設定
+    end 
+```
+
+ここの if 文では `reset` が 1 のときは `q` にリセット値 `RESET_VALUE` を代入し、そうでない場合 ( else ) は `d` の値を `q` に代入しています。
+なお、リセットはclock の立ち上がりエッジで動作する同期リセットであることに注意しましょう。
 
 register_r モジュールの動作例をタイムチャートで示すと図 5.3 のようになります。
 ここでは、ビット幅 `WIDTH` を 4 ビット、リセット値 `RESET_VALUE` を 4'b0000 とした場合の例を示しています。
@@ -209,7 +222,7 @@ register_r モジュールの動作例をタイムチャートで示すと図 5.
 
 この register_r モジュールを呼び出して使うには次のように記述します。
 モジュール呼び出し時にパラメータ値を設定しないと、デフォルト値が使用されます。
-すなわち、ビット幅 `WIDTH` は 4 ビット、リセット値 `RESET_VALUE` は `4'b0000` となります。
+すなわち、ビット幅 `WIDTH` は 4 ビット、リセット値 `RESET_VALUE` は `4'b0000` が使用されます。
 
 ```sv : shell.sv
 module shell(
@@ -232,7 +245,7 @@ endmodule
 ### 演習 1
 
 上記の register_r モジュールを搭載した shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
-shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.3 に示すように設定してください。
+shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.3 に示すようにデバイスへ割り当ててください。
 
 <表 5.3 shell モジュールの入出力のデバイスへの割り当て>
 | 信号名    |割り当てデバイス| 入出力 |
@@ -244,7 +257,7 @@ shell モジュールをプロジェクトの Top level design entity として�
 
 ### 演習 2
 
-register_r モジュールのリセット値 `RESET_VALUE` を `4'b1111` に変更して、レジスタの出力がリセット時に `4'b1111` になるようにしてみましょう。
+register_r モジュールのリセット値 `RESET_VALUE` を `4'b1010` に変更して、レジスタの出力がリセット時に `4'b1010` になるようにしてみましょう。
 次の shell モジュールのように、register_r モジュールの呼び出しの際のパラメータ値を変更してみてください。
 
 ```sv : shell.sv
@@ -255,7 +268,7 @@ module shell(
   output  logic [3:0] LEDR
 );
 
-  register_r #(.RESET_VALUE (4'b1111)) reg_r( // リセット値 RESET_VALUE を 4'b1111 に設定
+  register_r #(.RESET_VALUE (4'b1010)) reg_r( // リセット値 RESET_VALUE を 4'b1010 に設定
     .clock    (KEY0),
     .reset    (SW9),
     .d        (SW),
@@ -267,7 +280,7 @@ endmodule
 
 この shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
 先ほどの演習と同様に、shell モジュールをプロジェクトの Top level design entity として設定し、
-その入出力を表 5.3 に示すように設定してください。
+その入出力を表 5.3 に示すようにデバイスに割り当ててください。
 
 
 --- 
@@ -303,10 +316,10 @@ endmodule
 ```sv : shell.sv 
 module shell(
   input   logic       KEY0,   // clock
-  input   logic       KEY3,   // reset (active-low)
-  input   logic       SW9,    // write-enable
-  input   logic [7:0] SW,
-  output  logic [7:0] LEDR
+  input   logic       SW9,    // reset
+  input   logic       SW8,    // write-enable
+  input   logic [3:0] SW,
+  output  logic [3:0] LEDR
 );
 
   register_r_en reg_r(
@@ -322,9 +335,24 @@ endmodule
 
 ### 演習 
 
+書き込み許可付きレジスタ register_r_en モジュールを搭載した shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
+shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.4 に示すようにデバイスへ割り当ててください。
+
+<表 5.4 shell モジュールの入出力のデバイスへの割り当て>
+
+| 信号名    |割り当てデバイス| 入出力 |
+|-----------|----------------|--------|
+| KEY0      | KEY0           | input  |
+| SW9       | SW9            | input  |
+| SW8       | SW8            | input  |
+| SW[3:0]   | SW3-SW0        | input  |
+| LEDR[3:0] | LEDR3-LEDR0    | output |
+
 ---
 
 ## 5.5 10進カウンタ
+
+![counter10](./assets/chap05_counter10.svg)
 
 ```sv : counter10.sv
 module counter10(
@@ -346,6 +374,8 @@ module counter10(
 
 endmodule
 ```
+
+
 
 ```sv : shell.sv
 module shell(
@@ -402,7 +432,7 @@ module shell(
   
   logic [5:0] count;
 
-  counterN #(.WIDTH(8), .N(42)) counter42(
+  counterN #(.WIDTH(8), .MAX(171)) counter172(
     .clock  (KEY0),
     .reset  (SW9),
     .count  (count)

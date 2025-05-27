@@ -371,7 +371,7 @@ shell モジュールをプロジェクトの Top level design entity として�
 レジスタを用いると、カウンタを設計することもできます。
 ここでは図 5.5 に示すような 10 進カウンタを設計します。
 このカウンタはクロック信号 `clock` の立ち上がりのタイミングで、
-4ビットの出力信号 `count[3:0]` を 0 から 9 までカウントアップし、9 に達すると 0 に戻る動作をします。
+4ビットの出力信号 `count` を 0 から 9 までカウントアップし、9 に達すると 0 に戻る動作をします。
 
 ![counter10](./assets/chap05_counter10.svg)
 
@@ -526,7 +526,7 @@ shell モジュールをプロジェクトの Top level design entity として�
 | KEY0      | KEY0           | input  |
 | SW9       | SW9            | input  |
 | HEX1[6:0] | HEX16-HEX10    | output |
-| HEX0      | HEX06-HEX00    | output | 
+| HEX0[6:0] | HEX06-HEX00    | output | 
 
 
 ---

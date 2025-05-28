@@ -73,6 +73,7 @@ module shell(
     .d     (SW),
     .q     (LEDR)
   );
+endmodule
 ```
 
 ### 演習

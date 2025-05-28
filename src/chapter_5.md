@@ -341,8 +341,8 @@ module shell(
 
   register_r_en reg_r(
     .clock  (KEY0),
-    .reset  (KEY3),
-    .en     (SW9),
+    .reset  (SW9),
+    .en     (SW8),
     .d      (SW),
     .q      (LEDR)
   );

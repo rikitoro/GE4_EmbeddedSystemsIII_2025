@@ -393,7 +393,7 @@ module counter10(
 
   assign count_next = (count == 4'd9) ? 4'd0 : count + 1'd1;
 
-  regiser_r reg_count(
+  register_r reg_count(
     .clock  (clock),
     .reset  (reset),
     .d      (count_next),

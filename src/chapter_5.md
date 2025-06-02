@@ -536,3 +536,32 @@ shell モジュールをプロジェクトの Top level design entity として�
 
 
 ---
+
+## 5.7 カウント許可付き N 進カウンタ
+
+```sv : counterN_en.sv
+module counterN_en #(
+  parameter WIDTH = 4,
+  parameter logic [WIDTH-1:0] MAX = '1
+)(
+  input   logic             clock,
+  input   logic             reset,
+  input   logic             en,     // count-enable
+  output  logic [WIDTH-1:0] count
+);
+
+  logic [WIDTH-1:0] next_count;
+  
+  assign next_count = (count == MAX) ? '0 : count + 1'd1;
+
+  register_r_en #(.WIDTH(WIDTH)) reg_count(
+    .clock  (clock),
+    .reset  (reset),
+    .en     (en),
+    .d      (next_count),
+    .q      (count)
+  );
+
+endmodule
+```
+

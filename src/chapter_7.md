@@ -1,68 +1,185 @@
-# 7章 その他
+# 6章 状態機械の設計
 
-## 10進カウンタ
+前章までで、レジスタの設計方法と組み合わせ回路の設計方法、さらにそれらの回路モジュールを組み合わせて新しい回路を設計する方法を学んできました。
+レジスタと組み合わせ回路とを組み合わせることで、状態機械を設計することができます。
+本章では、状態機械の設計方法を学びます。
 
-```SystemVerilog : count10.sv
-module count10 (
+
+## 回路仕様
+
+状態機械 my_stm として、図6.1に示す、1-bit 入力 p、クロック入力 clock、アクティブローの非同期リセット信号 n_reset、2-bit 出力 y[1:0] を持つ回路を考えましょう。
+この状態機械 my_stm の状態遷移は図6.2で与えられるものとします。
+4つの状態(SA, SB, SC, SD)を持ち、出力 y が状態だけで決まるような Moore 型の状態機械です。
+
+状態遷移はclockの立ち上がりのタイミングで起こるとします。
+ただし、アクティブローの非同期リセット信号 n_reset が 0 になると直ちに(clockの立ち上がりを待たずに)状態がSAにリセットされます。
+
+![状態機械 my_stm](./assets/my_stm_circuit.png "状態機械 my_stm")
+
+<図6.1 状態機械 my_stm>
+
+
+![my_stm の状態遷移図](./assets/my_stm.png "my_stm の状態遷移図")
+
+<図6.2 my_stm の状態遷移図>
+
+## 状態レジスタ
+
+状態機械 my_stm は4つの状態を持ちます。
+これらの状態を表6.1のように2ビットで符号化することにしましょう。
+
+<表6.1 状態の符号化>
+
+| 状態 | 符号 state[1:0] |
+|------|-----------------|
+| SA | 00 |
+| SB | 01 |
+| SC | 10 |
+| SD | 11 |
+
+2ビットのレジスタを用意し、レジスタに符号化された信号を保持することで、現在どの状態にあるかを表すことができます。
+このレジスタを状態レジスタと呼びましょう。
+
+状態レジスタはリスト6.1のように非同期リセット付き2ビットレジスタとして設計できます。
+なお、回路の仕様(図6.3)より、アクティブローの非同期リセット n_reset が入ると状態は SA にリセットされるので、リスト6.1においても n_reset が0になったタイミングで出力 q[1:0] が状態 SA に相当する符号 00 にリセットされていることに注意してください。
+
+<リスト6.1 register モジュール(非同期リセット付き2ビットレジスタ)>
+
+```SystemVerilog : register.sv
+module register ( // 非同期リセット付き2ビットレジスタ
   input   logic       clock,
-  output  logic [3:0] count
+  input   logic       n_reset, // active low async reset
+  input   logic [1:0] d,
+  output  logic [1:0] q
 );
 
-  always_ff @ (posedge clock) begin
-    if (count >= 4'd9) begin
-      count <= 4'd0;
+  always_ff @ (posedge clock, negedge n_reset) begin
+    if (n_reset == 1'b0) begin
+      q <= 2'b00;  // SA にリセット
     end else begin
-      count <= count + 1'd1;
+      q <= d;
     end
   end
 
 endmodule
 ```
 
+## 次状態関数回路
 
-## parameter
+図6.2の状態遷移図をもとに、今の状態と次の状態の関係を表にまとめると、表6.2の状態遷移表が得られます。
 
-```SystemVerilog : register.sv
-module register #(parameter WIDTH = 8) (
-  input                     clock,
-  input   logic [WIDTH-1:0] d,
-  output  logic [WIDTH-1:0] q
+<表6.2 my_stm の状態遷移表>
+
+| p | 今の状態 | 次の状態 |
+|---|----------|----------|
+| 0 | SA | SB |
+| 0 | SB | SC |
+| 0 | SC | SD |
+| 0 | SD | SA |
+| 1 | SA | SA |
+| 1 | SB | SB |
+| 1 | SC | SC |
+| 1 | SD | SD |
+
+表6.2の状態遷移表に現れる状態を、表6.1によって符号に置き換えることで、次状態関数回路 next_state_generator モジュールの真理値表が得られます(表6.3)。
+
+<表6.3 次状態関数回路 next_state_generatorの真理値表>
+
+| 入力 p | 入力 state[1:0] | 出力 next_state[1:0] |
+|---|--------------|----------------|
+| 0 | 00 | 01 |
+| 0 | 01 | 10 |
+| 0 | 10 | 11 |
+| 0 | 11 | 00 |
+| 1 | 00 | 00 |
+| 1 | 01 | 01 |
+| 1 | 10 | 10 |
+| 1 | 11 | 11 |
+
+表6.3の真理値表をもとにして、 next_state_generator モジュールはリスト6.2のように記述できます。
+
+<リスト6.2 next_state_generator モジュール(次状態関数回路)>
+
+```SystemVerilog : next_state_generator.sv
+module next_state_generator (
+  input   logic [1:0] state,
+  input   logic       p,
+  output  logic [1:0] next_state
 );
 
-  always_ff @ (posedge clock) begin
-    q <= d;
+  always_comb begin
+    case ({p, state})
+      3'b0_00:  next_state = 2'b01;
+      3'b0_01:  next_state = 2'b10;
+      3'b0_10:  next_state = 2'b11;
+      3'b0_11:  next_state = 2'b00;
+      3'b1_00:  next_state = 2'b00;
+      3'b1_01:  next_state = 2'b01;
+      3'b1_10:  next_state = 2'b10;
+      3'b1_11:  next_state = 2'b11;
+      default:  next_state = 2'b00;
+    endcase
   end
-endmodule
+
+endmodule //
 ```
 
-```SystemVerilog : top.sv
-module top (
-  input   logic       clock,
-  input   logic [1:0] sw_2bit,
-  input   logic [7:0] sw_8bit,
-  output  logic [1:0] led_2bit,
-  output  logic [7:0] led_8bit
+
+## 出力関数回路
+
+図6.2の状態遷移図をもとに、今の状態と出力の関係を表にまとめると、表6.4が得られます。
+
+<表6.4 状態と出力の対応表>
+
+| 今の状態 | 出力 y[1:0] |
+|----------|-------------|
+| SA | 00 |
+| SB | 01 |
+| SC | 00 |
+| SD | 10 |
+
+先ほどと同様に、状態を符号に置き換えることで、表6.5のように出力関数回路 output_decoder の真理値表が得られます。
+
+<表6.5 出力関数回路 output_decoder の真理値表>
+
+| 入力 state[1:0] | 出力 y[1:0] |
+|-----------------|-------------|
+| 00 | 00 |
+| 01 | 01 |
+| 10 | 00 |
+| 11 | 10 |
+
+表6.5より output_decoder モジュールはリスト6.3のように記述できます。
+
+<リスト6.3 output_decoder モジュール(出力関数回路)>
+
+```SystemVerilog : output_decoder.sv
+module output_decoder (
+  input   logic [1:0] state,
+  output  logic [1:0] y
 );
 
-  // 2-bit レジスタ
-  register #(.WIDTH(2)) register_2bit( // registerモジュールのパラメータを上書き(WIDTH = 2)
-    .clock  (clock),
-    .d      (sw_2bit),
-    .q      (led_2bit)
-  );
+  always_comb begin
+    case (state)
+      2'b00   :  y = 2'b00;
+      2'b01   :  y = 2'b01;
+      2'b10   :  y = 2'b00;
+      2'b11   :  y = 2'b10;
+      default :  y = 2'b00;
+    endcase
+  end
 
-  // 8-bit レジスタ
-  register register_8bit (  // パラメータを指定しないとregisterモジュールで指定された値が使われる(WIDTH = 8)
-    .clock  (clock),
-    .d      (sw_8bit),
-    .q      (led_8bit)
-  );
-
-endmodule // Top
+endmodule //
 ```
 
+## 状態機械の組み上げ
 
-## enum
+以上で、状態レジスタ register モジュール、次状態関数回路 next_state_generator モジュール、出力関数回路 output_decoder が設計できました。
+最後にこれらの各モジュールを図6.3のように接続することで、状態機械 my_stm を作ることができます。
+
+my_stm モジュールの設計例をリスト6.4に示します。
+
+<リスト6.4 my_stm モジュール>
 
 ```SystemVerilog : my_stm.sv
 module my_stm (
@@ -72,98 +189,45 @@ module my_stm (
   output  logic [1:0] y
 );
 
-  // State
-  typedef enum logic[1:0] {SA, SB, SC, SD} State;
+  logic [1:0] state;      // 今の状態
+  logic [1:0] next_state; // 次の状態
 
-  State state;
+  // 状態レジスタ
+  register state_register(
+    .clock    (clock),
+    .n_reset  (n_reset),
+    .d        (next_state),
+    .q        (state)
+  );
 
-  // next_state_generator + register(with async reset)
-  always_ff @ (posedge clock, negedge n_reset) begin
-    if (n_reset == 1'b0) begin  // active low async reset
-      state <= SA;
-    end else begin
-      case ({p, state}) //  state transition
-        {1'b0, SA}: state <= SB;
-        {1'b0, SB}: state <= SC;
-        {1'b0, SC}: state <= SD;
-        {1'b0, SD}: state <= SA;
-        {1'b1, SA}: state <= SA;
-        {1'b1, SB}: state <= SB;
-        {1'b1, SC}: state <= SC;
-        {1'b1, SD}: state <= SD;
-        default:    state <= SA;
-      endcase
-    end
-  end
+  // 次状態関数
+  next_state_generator next_state_generator(
+    .p          (p),
+    .state      (state),
+    .next_state (next_state)
+  );
 
-  // output_decoder
-  always_comb begin
-    case (state)
-      SA:       y = 2'b00;
-      SB:       y = 2'b01;
-      SC:       y = 2'b00;
-      SD:       y = 2'b10;
-      default:  y = 2'b00;
-    endcase
-  end
+  // 出力関数
+  output_decoder output_decoder(
+    .state      (state),
+    .y          (y)
+  );
 
-endmodule
-
+endmodule //
 ```
 
+## 演習
 
-## ノンブロッキング代入とブロッキング代入のちがい
+リスト6.4 my_stm モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
+my_stm モジュールの入出力信号は表6.6のように DE0-CV の入出力デバイスに割り当ててください。
 
-### ノンブロッキング代入
+なお、リスト6.1 register モジュール、リスト6.2 next_state_generator モジュール、およびリスト6.3 output_decoder モジュールも必要となりますので、プロジェクトにそれらのデザインファイルも追加しましょう。
 
-```SystemVerilog : nonblocking.sv
-module nonblocking( // shift register
-  input   logic clk,
-  input   logic d,
-  output  logic q0,
-  output  logic q1
-);
+<表6.6 my_stm モジュールの入出力のデバイスへの割り当て>
 
-  always_ff @ (posedge clk) begin
-    q0 <= d;   // (1)
-    q1 <= q0;  // (2)
-  end
-  
-endmodule
-```
-
-ノンブロッキング代入を用いた場合、(1)と(2)の代入が並列で実行されます。
-したがって、クロック clk の立ち上がりのタイミングで、
-q0 には d の値、q1 には直前の q0 の値が代入されます。
-
-![timechart](./assets/timechart_nonblocking.png) 
-
-![shift register](./assets/nonblocking.png)
-
-
-
-### ブロッキング代入
-
-```SystemVerilog : blocking.sv
-module blocking( // shift register
-  input   logic clk,
-  input   logic d,
-  output  logic q0,
-  output  logic q1
-);
-
-  always_ff @ (posedge clk) begin
-    q0 = d;   // (1)
-    q1 = q0;  // (2)
-  end
-  
-endmodule
-```
-
-
-ブロッキング代入では、上から順に(1)を評価し次に(2)を評価され、その結果、q1 = q0 = d となります。
-したがって、クロック clk の立ち上がりのタイミングで、q0, q1 ともに d の値が代入されます。
-
-![timechart](./assets/timechart_blocking.png)
-
-![register](./assets/blocking.png)
+|信号名|割り当てデバイス|入出力|
+|------|----------------|------|
+|clock            | KEY0        | input |
+|n_reset          | KEY1        | input |
+|p                | SW0         | input |
+|y[1:0]           | LEDR1-LEDR0 | output |

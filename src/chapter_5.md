@@ -565,3 +565,20 @@ module counterN_en #(
 endmodule
 ```
 
+```sv : shell.sv
+module shell(
+  input   logic       KEY0, // clock
+  input   logic       SW9,  // reset
+  input   logic       SW8,  // count enable
+  output  logic [3:0] LEDR
+);
+
+  counterN_en #(.MAX(4'd9)) counter10(
+    .clock  (KEY0),
+    .reset  (SW9),
+    .en     (SW8),
+    .count  (LEDR)
+  );
+
+endmodule
+```

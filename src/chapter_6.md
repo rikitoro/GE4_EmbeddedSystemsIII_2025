@@ -1,5 +1,7 @@
 # 6章 レジスタを用いた応用回路の設計
 
+## 6.1
+
 ```sv : register_r_en_n.sv
 module register_r_en_n #(
   parameter WIDTH = 4,
@@ -22,6 +24,31 @@ module register_r_en_n #(
 
 endmodule
 ```
+
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       SW9,    // reset
+  input   logic       SW8,    // write-enable
+  input   logic [3:0] SW,     // d (SW3-SW0)
+  output  logic [3:0] LEDR    // q (LEDR3-LEDR0)
+);
+
+  register_r_en_n reg4_n( // WIDTH = 4, RESET_VALUE = 4'b0000
+    .clock (KEY0),
+    .reset (SW9),
+    .en    (SW8),
+    .d     (SW),
+    .q     (LEDR)
+  );
+  
+  
+endmodule
+```
+
+---
+
+## 6.2
 
 ```sv : counterN_n.sv
 module counterN_n #(
@@ -48,6 +75,27 @@ module counterN_n #(
 endmodule
 ```
 
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       SW9,    // reset
+  output  logic [3:0] LEDR0   // count
+);
+  
+  // 10 進カウンタ
+  counterN_n#(.MAX(4'd9)) counter10( // WIDTH = 4, 
+    .clock  (KEY0),
+    .reset  (SW9),
+    .count  (LEDR0)
+  );
+
+
+endmodule
+```
+---
+
+## 6.3
+
 ```sv : pulse_dividerN_n.sv
 module pulse_dividerN_n #(
   parameter WIDTH = 4,
@@ -72,8 +120,6 @@ module pulse_dividerN_n #(
 endmodule
 ```
 
-
-
 ```sv : shell.sv
 module shell(
   input   logic     KEY0, // clock
@@ -92,6 +138,9 @@ module shell(
 endmodule
 ```
 
+---
+
+## 6.4 
 
 ```sv : shell.sv
 module shell(

@@ -539,6 +539,22 @@ shell モジュールをプロジェクトの Top level design entity として�
 
 ## 5.7 カウント許可付き N 進カウンタ
 
+N 進カウンタ counterN を構成するレジスタ (リセット付きレジスタ register_r ) を書き込み許可付きレジスタ register_r_en に取り替えることで、
+カウント許可付きカウンタを構成することができます。
+図 5.7 に示すようなカウント許可付き N 進カウンタを設計します。
+このカウント許可付き N 進カウンタは、カウント許可信号 `en` が 1 のときにのみカウントアップを行います。
+
+![counterN_en](./assets/chap05_counterN_en.svg)
+
+< 図 5.7 カウント許可付き N カウンタ counterN_en >
+
+
+リスト 5.7 の counterN_en モジュールは、カウント許可付き N 進カウンタの設計例です。
+カウンタのビット幅 `WIDTH` とカウント値の最大値 `MAX` をパラメータとして指定します。
+カウント許可信号 `en` 、クロック信号 `clock` 、リセット信号 `reset` を入力とし、カウント値 `count` (ビット幅 `WIDTH` ) を出力します。
+
+<リスト 5.7 counterN_en モジュール>
+
 ```sv : counterN_en.sv
 module counterN_en #(
   parameter WIDTH = 4,
@@ -565,6 +581,18 @@ module counterN_en #(
 endmodule
 ```
 
+この counterN_en モジュールの動作例をタイムチャートで示すと図 5.7a のようになります。
+ここでは ビット幅 `WIDTH` を 4 ビット、カウント値の最大値 `MAX` を 9 とした 10 進カウンタの例を示しています。
+カウント許可信号 `en` が 1 のときは、クロック信号 `clock` の立ち上がりエッジでカウントアップが行われますが、
+`en` が 0 のときは、カウント値 `count` は変化しません。
+
+![counterN_en_timing](./assets/chap05_counterN_en_timing.svg)
+
+<図 5.7a カウント許可付き N カウンタ counterN_en モジュールの動作例>
+
+### 演習
+上記の counterN_en モジュールを搭載した shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
+
 ```sv : shell.sv
 module shell(
   input   logic       KEY0, // clock
@@ -573,7 +601,7 @@ module shell(
   output  logic [3:0] LEDR
 );
 
-  counterN_en #(.MAX(4'd9)) counter10(
+  counterN_en #(.MAX(4'd9)) counter10( // ビット幅 4 ビット 最大値 9 のカウンタ
     .clock  (KEY0),
     .reset  (SW9),
     .en     (SW8),
@@ -582,3 +610,16 @@ module shell(
 
 endmodule
 ```
+
+プロジェクトには shell モジュールと counterN_en モジュールに加えて、register_r_en モジュールも必要となります。
+shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.7 に示すようにデバイスへ割り当ててください。
+
+<表 5.7 shell モジュールの入出力のデバイスへの割り当て>
+
+| 信号名    |割り当てデバイス| 入出力 |
+|-----------|----------------|--------|
+| KEY0      | KEY0           | input  |
+| SW9       | SW9            | input  |
+| SW8       | SW8            | input  |
+| LEDR[3:0] | LEDR3-LEDR0    | output |
+

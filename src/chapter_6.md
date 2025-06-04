@@ -278,8 +278,7 @@ endmodule
 module shell(
   input   logic       CLOCK_50, // clock (50MHz)
   input   logic       SW9,      // reset
-  output  logic [3:0] LEDR,     // count
-  output  logic [6:0] HEX0
+  output  logic [3:0] LEDR     // count
 );
 
   logic onesec_pulse;  // 1 秒ごとのパルス信号

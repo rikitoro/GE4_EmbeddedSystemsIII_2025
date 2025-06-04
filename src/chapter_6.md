@@ -199,6 +199,7 @@ module pulse_dividerN #(
   input   logic clock,  // クロック信号 (立ち下がりでカウントアップ)
   input   logic reset,
   output  logic pulse   // パルス信号 
+);
 
   logic [WIDTH-1:0] count;  // カウンタのカウント値
 

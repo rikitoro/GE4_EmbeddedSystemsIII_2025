@@ -196,7 +196,7 @@ module pulse_dividerN #(
   parameter WIDTH = 4,
   parameter logic [WIDTH-1:0] MAX
 )(
-  input   logic clock,　// クロック信号 (立ち下がりでカウントアップ)
+  input   logic clock,  // クロック信号 (立ち下がりでカウントアップ)
   input   logic reset,
   output  logic pulse   // パルス信号 
 

@@ -220,13 +220,13 @@ endmodule
 なお、カウント値 `count` は、モジュール内部の信号であり外部からは観測できない信号ですので、タイムチャートでは破線で示しています。
 出力信号 `pulse` は、3 クロックサイクルごとに 1 クロック周期分のパルスを出力します。
 
-![pulse_dividerN_n モジュールの動作例](./assets/pulse_dividerN_timing.svg)
+![pulse_dividerN モジュールの動作例](./assets/pulse_dividerN_timing.svg)
 
-<図 6.3a pulse_dividerN_n モジュールの動作例>
+<図 6.3a pulse_dividerN モジュールの動作例>
 
 ### 演習
 
-リスト 6.3 の pulse_dividerN_n モジュールを搭載した以下の shell モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
+リスト 6.3 の pulse_dividerN モジュールを搭載した以下の shell モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
 
 ```sv : shell.sv
 module shell(
@@ -285,7 +285,7 @@ module shell(
   logic onesec_pulse;  // 1 秒ごとのパルス信号
   
   // 1 秒ごとのパルス発生器 (50MHz クロックを 50,000,000 分周)
-  pulse_dividerN_n#(.WIDTH(26), .MAX(26'd49_999_999)) onesec_gen(
+  pulse_dividerN #(.WIDTH(26), .MAX(26'd49_999_999)) onesec_gen(
     .clock  (CLOCK_50),
     .reset  (SW9),
     .pulse  (onesec_pulse)

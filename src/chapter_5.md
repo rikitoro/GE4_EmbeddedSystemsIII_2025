@@ -522,7 +522,7 @@ endmodule
 ### 演習
 
 上記の counterN モジュールを搭載した shell モジュールを実習ボード DE0-CV に実装して、その動作を確かめてみましょう。
-プロジェクトには sell モジュールと counterN モジュールに加えて、register_r モジュール と sseg_decoder モジュールも必要となります。
+プロジェクトには shell モジュールと counterN モジュールに加えて、register_r モジュール と sseg_decoder モジュールも必要となります。
 shell モジュールをプロジェクトの Top level design entity として設定し、その入出力を表 5.6 に示すようにデバイスへ割り当ててください。
 
 <表 5.6 shell モジュールの入出力のデバイスへの割り当て>

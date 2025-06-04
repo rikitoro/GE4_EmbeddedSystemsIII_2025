@@ -194,7 +194,7 @@ N 進カウンタを利用して、クロック信号を N 分周するパルス
 ```sv : pulse_dividerN.sv
 module pulse_dividerN #(
   parameter WIDTH = 4,
-  parameter logic [WIDTH-1:0] MAX
+  parameter logic [WIDTH-1:0] MAX = '1
 )(
   input   logic clock,  // クロック信号 (立ち下がりでカウントアップ)
   input   logic reset,

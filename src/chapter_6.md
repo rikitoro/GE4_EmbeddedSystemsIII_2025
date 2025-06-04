@@ -234,7 +234,7 @@ module shell(
   output  logic     LEDR0 // pulse 
 );
 
-  pulse_dividerN #(.WIDTH(4), .MAX(2'd9)) // 10 分周パルス発生器 
+  pulse_dividerN #(.WIDTH(4), .MAX(4'd9)) // 10 分周パルス発生器 
   pulse_div10(
     .clock  (KEY0),
     .reset  (SW9),

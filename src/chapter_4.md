@@ -44,6 +44,7 @@ shell モジュールの内部では、priority_encoder モジュールと sseg_
 (プロジェクトには shell.sv, priotiry_encode.sv, sseg_decoder.sv のファイルが登録されていることを確認してください)
 
 <リスト4.1b priority_encoder モジュール (再掲) >
+
 ~~~admonish title="priority_encoder.sv", collapsible=true
 ```sv : priority_encoder.sv
 module priority_encoder(

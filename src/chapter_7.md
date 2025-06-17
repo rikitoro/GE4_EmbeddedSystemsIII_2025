@@ -236,11 +236,11 @@ endmodule
 <リスト 6.1d my_stm モジュール>
 
 ```sv : my_stm1.sv
-module my_stm (
+module my_stm1 (
   input   logic       clock,
   input   logic       reset,
   input   logic       p,
-  output  logic [1:0] y
+  output  logic       y
 );
 
   logic [2:0] state;      // 現在の状態
@@ -275,41 +275,304 @@ endmodule //
 
 ### 演習
 
-my_stm1 モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
-my_stm1 モジュールを top level design entity としてプロジェクトに設定し、入出力信号を表 6.1f のように割り当ててください。
-プロジェクトには my_stm1 モジュールに加えて、以下のモジュールを定義したファイルが必要となることに注意してください。
-- register_r  (リスト 6.1a の同期リセット付きレジスタ)
-- next_state_generator (リスト 6.1b の次状態生成回路)
-- output_decoder (リスト 6.1c の出力生成回路)
+my_stm1 モジュールを搭載した以下の shell モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
+以下の shell モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       SW9,   // reset
+  input   logic       SW0,    // p
+  output  logic       LEDR0   // y
+);
 
+  my_stm1 stm(
+    .clock(KEY0),   // clock
+    .reset(SW9),    // reset
+    .p(SW0),        // p
+    .y(LEDR0)       // y
+  );
+
+endmodule
+```
+
+shell モジュールを top level design entity としてプロジェクトに設定し、入出力信号を表 6.1f のように割り当ててください。
 
 <表 6.1f my_stm1 モジュールの入出力のデバイスへの割り当て>
 
 |信号名|割り当てデバイス|入出力 |
 |------|----------------|-------|
 |clock | KEY0           | input |
-|reset | KEY3           | input |
+|reset | SW9            | input |
 |p     | SW0            | input |
 |y     | LEDR0          | output|
+
+プロジェクトには shell モジュールに加えて、以下のモジュールを定義したファイルが必要となることに注意してください。
+- my_stm1 (リスト 6.1d のステートマシン)
+- register_r  (リスト 6.1a の同期リセット付きレジスタ)
+- next_state_generator (リスト 6.1b の次状態生成回路)
+- output_decoder (リスト 6.1c の出力生成回路)
+
 
 
 ## 6.2 列挙型(enum)を用いたステートマシンの設計
 
 ここでは、列挙型(enum)を用いてステートマシンの状態を定義し、より可読性の高いコードでステートマシンを設計する方法を学びます。
+列挙型(enum)を用いることで、状態を数値ではなく意味のある名前で表現でき、コードの可読性が向上します。
+列挙型を用いたステートマシンの設計方法を学ぶために、前節で設計した my_stm1 モジュールを列挙型を用いて書き直してみます。
+
+列挙型は SystemVerilog で定義できるデータ型の一つで、特定の値の集合を名前付きで定義することができます。
+
+列挙型の定義は次のように行います。
+
+```sv :
+  typedef enum logic [1:0] {
+    SA = 2'b00, // 状態 SA
+    SB = 2'b01, // 状態 SB
+    SC = 2'b10  // 状態 SC
+  } state_t;
+```
+
+ここでは、列挙型 `state_t` を定義し、状態 SA, SB, SC をそれぞれ 2 ビットの値で表現しています。
+なお、7.1 節では、状態を 3 ビットで符号化していましたが、ここでは 2 ビット幅の列挙型を用いて符号化しています。
+(もちろん、3 ビットで符号化しても問題ありません。)
+
+以下のリスト 6.2 に、列挙型を用いて my_stm1 モジュールを再設計した my_stm2 モジュールの HDL 記述を示します。
+
+<リスト 6.2 列挙型を用いた my_stm2 モジュール>
+
+```sv : my_stm2.sv
+module my_stm2 (
+  input   logic       clock,
+  input   logic       reset,
+  input   logic       p,
+  output  logic       y
+);
+
+  // 列挙型で状態を定義
+  typedef enum logic [1:0] {
+    SA = 2'b00, // 状態 SA
+    SB = 2'b01, // 状態 SB
+    SC = 2'b10  // 状態 SC
+  } state_t;
+
+  state_t state;      // 現在の状態
+  state_t next_state; // 次の状態
+
+  // 状態レジスタ
+  register_r #(
+    .WIDTH(2),           // 列挙型のビット幅は 2
+    .RESET_VALUE(SA)     // SA にリセット
+  ) state_register (
+    .clock(clock),
+    .reset(reset),
+    .d(next_state),   // 次の状態を入力
+    .q(state)         // 現在の状態を出力
+  );
+
+  // 次状態生成回路部分
+  always_comb begin
+    case ({state, p}) // state と p を連結して状態遷移を定義
+      {SA, 1'b0}: next_state = SA; // SA -- p=0 --> SA
+      {SA, 1'b1}: next_state = SB; // SA -- p=1 --> SB
+      {SB, 1'b0}: next_state = SC; // SB -- p=0 --> SC
+      {SB, 1'b1}: next_state = SA; // SB -- p=1 --> SA
+      {SC, 1'b0}: next_state = SC; // SC -- p=0 --> SC
+      {SC, 1'b1}: next_state = SA; // SC -- p=1 --> SA
+      default:    next_state = SA; // デフォルトは SA にリセット
+    endcase
+  end
+
+  // 出力生成回路部分
+  always_comb begin
+    case (state)
+      SA: y = 1'b0; // SA のときは出力 0
+      SB: y = 1'b1; // SB のときは出力 1
+      SC: y = 1'b0; // SC のときは出力 0
+      default: y = 1'b0; // デフォルトは出力 0
+    endcase
+  end
+endmodule
+```
+
+この my_stm2 モジュールは、列挙型を用いて状態を定義し、状態遷移と出力生成を行っています。
+現在の状態と次の状態を表す内部信号 `state` と `next_state` は、列挙型 `state_t` を用いて定義されています。
+また、case 文を用いて、状態遷移と出力信号の生成を行っていますが、このパターンマッチの部分にも列挙型 `state_t` の値 (SA, SB, SC) を用いることで、より可読性の高いコードになっています。
+
 
 ### 演習
+
+my_stm2 モジュールを搭載した以下の shell モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
+
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       SW9,    // reset
+  input   logic       SW0,    // p
+  output  logic       LEDR0   // y
+);
+
+  my_stm2 stm(
+    .clock(KEY0),   // clock
+    .reset(SW9),    // reset
+    .p(SW0),        // p
+    .y(LEDR0)       // y
+  );
+endmodule
+``` 
+
+shell モジュールを top level design entity としてプロジェクトに設定し、入出力信号を表 6.2 のように割り当ててください。
+
+<表 6.2 my_stm2 モジュールの入出力のデバイスへの割り当て>
+
+|信号名|割り当てデバイス|入出力 |
+|------|----------------|-------|
+|clock | KEY0           | input |
+|reset | SW9            | input | 
+|p     | SW0            | input |
+|y     | LEDR0          | output|
+
+プロジェクトには shell モジュールに加えて、以下のモジュールを定義したファイルが必要となることに注意してください。
+- my_stm2 (リスト 6.2 のステートマシン) 
+- register_r  (リスト 6.1a の同期リセット付きレジスタ)
+
+
+
 
 ## 6.3 Mealy 型ステートマシンの設計
 
 Mealy 型ステートマシンは、出力が現在の状態と入力に依存するステートマシンです。
-図 6.3 に示すような Mealy 型ステートマシン my_stm2 を設計します。
+ここでは、図 6.3a に示すような Mealy 型ステートマシン my_stm3 を設計します。
 
-![ステートマシン my_stm2](./assets/my_stm2_circuit.svg "ステートマシン my_stm2")
+![ステートマシン my_stm3](./assets/my_stm3.svg "ステートマシン my_stm3")
 
-<図6.3 my_stm2 の状態遷移図>
+<図 6.3a Mealy 型ステートマシン my_stm3>
 
+my_stm3 は 2 つの状態(SA, SB)を持ち、入力 p と現在の状態に応じて出力 y が決まる Mealy 型のステートマシンです。
+状態遷移は clock の立ち上がりのタイミングで起こるものとします。
+同期リセット信号 reset が 1 になると、clock の立ち上がりで状態は SA にリセットされます。
+
+my_stm3 の期待される動作例を図 6.4 にタイムチャートで示します。
+(状態は外部からは見えないので、破線で示しています。)
+
+![my_stm3 の動作例](./assets/timechart_my_stm3.svg "my_stm3 の動作例")
+
+
+状態遷移図をもとに、my_stm3 の状態遷移表を作成すると次のようになります。
+
+<表 6.3a my_stm3 の状態遷移表>
+
+| 現在の状態 | 入力 p | 次の状態 |
+|----------|--------|----------|
+| SA       | 0      | SA       |
+| SA       | 1      | SB       |
+| SB       | 0      | SB       |
+| SB       | 1      | SB       |
+
+
+また、出力 y の値は現在の状態と入力 p によって決まります。
+
+<表 6.3b my_stm3 の入力、状態と出力との対応表>
+
+| 現在の状態 | 入力 p | 出力 y |
+|----------|--------|--------|
+| SA       | 0      | 0      |
+| SA       | 1      | 0      |
+| SB       | 0      | 0      |
+| SB       | 1      | 1      |
+
+この状態遷移表と出力の対応表をもとに、次状態生成回路と出力生成回路を設計します。
+
+
+<図 6.3b my_stm3 の動作例>
+
+```sv : my_stm3.sv
+module my_stm3 (
+  input   logic       clock,
+  input   logic       reset,
+  input   logic       p,
+  output  logic       y
+);
+
+  // 列挙型で状態を定義
+  typedef enum logic {
+    SA = 1'b0, // 状態 SA
+    SB = 1'b1, // 状態 SB
+  } state_t;
+
+  state_t state;      // 現在の状態
+  state_t next_state; // 次の状態
+
+  // 状態レジスタ
+  register_r #(
+    .WIDTH(1),           // 列挙型のビット幅は 2
+    .RESET_VALUE(SA)     // SA にリセット
+  ) state_register (
+    .clock(clock),
+    .reset(reset),
+    .d(next_state),   // 次の状態を入力
+    .q(state)         // 現在の状態を出力
+  );
+
+  // 次状態生成回路部分
+  always_comb begin
+    case ({state, p}) // state と p を連結して状態遷移を定義
+      {SA, 1'b0}: next_state = SA; // SA -- p=0 --> SA
+      {SA, 1'b1}: next_state = SB; // SA -- p=1 --> SB
+      {SB, 1'b0}: next_state = SB; // SB -- p=0 --> SB
+      {SB, 1'b1}: next_state = SB; // SB -- p=1 --> SA
+      default:    next_state = SA; // デフォルトは SA にリセット
+    endcase
+  end
+
+  // 出力生成回路部分 (Mealy 型)
+  always_comb begin
+    case ({state, p}) // state と p を連結して出力を定義
+      {SA, 1'b0}: y = 1'b0;
+      {SA, 1'b1}: y = 1'b0;
+      {SB, 1'b0}: y = 1'b1;
+      {SB, 1'b1}: y = 1'b1;
+      default:    y = 1'b0; // デフォルトは出力 0
+    endcase
+  end
+endmodule
+```
 
 ### 演習
+
+my_stm3 モジュールを搭載した以下の shell モジュールを実習ボード DE0-CV に実装してその動作を確認しましょう。
+
+```sv : shell.sv
+module shell(
+  input   logic       KEY0,   // clock
+  input   logic       SW9,    // reset
+  input   logic       SW0,    // p
+  output  logic       LEDR0   // y
+);
+
+  my_stm3 stm(
+    .clock(KEY0),   // clock
+    .reset(SW9),    // reset
+    .p(SW0),        // p
+    .y(LEDR0)       // y
+  );
+endmodule
+```
+
+shell モジュールを top level design entity としてプロジェクトに設定し、入出力信号を表 6.3c のように割り当ててください。
+<表 6.3c my_stm3 モジュールの入出力のデバイスへの割り当て>
+
+|信号名|割り当てデバイス|入出力 |
+|------|----------------|-------|
+|clock | KEY0           | input |
+|reset | SW9            | input |
+|p     | SW0            | input |
+|y     | LEDR0          | output|
+
+プロジェクトには shell モジュールに加えて、以下のモジュールを定義したファイルが必要となることに注意してください。
+- my_stm3 (リスト 6.3 のステートマシン)
+- register_r  (リスト 6.1a の同期リセット付きレジスタ)
+
+
 
 
 ## 6.4 課題

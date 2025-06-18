@@ -422,14 +422,14 @@ endmodule
 
 shell モジュールを top level design entity としてプロジェクトに設定し、入出力信号を表 7.2 のように割り当ててください。
 
-<表 7.2 my_stm2 モジュールの入出力のデバイスへの割り当て>
+<表 7.2 shell モジュールの入出力のデバイスへの割り当て>
 
 |信号名|割り当てデバイス|入出力 |
 |------|----------------|-------|
-|clock | KEY0           | input |
-|reset | SW9            | input | 
-|p     | SW0            | input |
-|y     | LEDR0          | output|
+|KEY0  | KEY0           | input |
+|SW9   | SW9            | input | 
+|SW0   | SW0            | input |
+|LEDR0 | LEDR0          | output|
 
 プロジェクトには shell モジュールに加えて、以下のモジュールを定義したファイルが必要となることに注意してください。
 - my_stm2 (リスト 7.2 のステートマシン) 
@@ -577,10 +577,10 @@ shell モジュールを top level design entity としてプロジェクトに�
 
 |信号名|割り当てデバイス|入出力 |
 |------|----------------|-------|
-|clock | KEY0           | input |
-|reset | SW9            | input |
-|p     | SW0            | input |
-|y     | LEDR0          | output|
+|KEY0  | KEY0           | input |
+|SW9   | SW9            | input |
+|SW0   | SW0            | input |
+|LEDR0 | LEDR0          | output|
 
 プロジェクトには shell モジュールに加えて、以下のモジュールを定義したファイルが必要となることに注意してください。
 - my_stm3 (リスト 6.3 のステートマシン)

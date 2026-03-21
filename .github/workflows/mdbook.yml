@@ -31,7 +31,8 @@ jobs:
     env:
       MDBOOK_VERSION: 0.4.36
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - name: Install mdBook
         run: |
           cargo install mdbook --no-default-features --features search --vers "0.4.52" --locked

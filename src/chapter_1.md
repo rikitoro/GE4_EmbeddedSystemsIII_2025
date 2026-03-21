@@ -19,7 +19,7 @@ LED(LEDR9-0)、7セグメントLED(HEX5-0)、GPIOなど多くのI/Oを
 
 本実習では回路設計を行うための EDA(electronic design automation) ツールとして Quartus Prime Lite Edition を利用します。
 
-[インテル Quartus Prime](https://www.altera.co.jp/products/design-software/fpga-design/quartus-prime/download.html)
+[インテル Quartus Prime](https://www.intel.co.jp/content/www/jp/ja/software-kit/868560/intel-quartus-prime-lite-edition-design-software-version-25-1-for-linux.html)
 
 
 ## 1.3 実習ボード・開発ツールの使い方
